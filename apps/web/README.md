@@ -164,6 +164,9 @@ Open http://localhost:3000
 | Attendance proof | Session names |
 | Certificate hash | File preview |
 
+> [!IMPORTANT]
+> This system is **Serverless**. It does not use any centralized database (No Convex, No SQL, No Firebase). All trust-related data is stored directly on the Algorand Blockchain.
+
 ---
 
 ## 🎤 Demo Flow
