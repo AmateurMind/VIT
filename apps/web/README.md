@@ -1,36 +1,185 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔐 Campus Trust System
 
-## Getting Started
+> **Blockchain-Secured Voting, Attendance & Certificate Verification on Algorand**
 
-First, run the development server:
+Built for **Hackspiration'26 - Track 2: AI and Automation in Blockchain**
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 🎯 Problem Statement
+
+Campus systems (voting, attendance, certificates) suffer from:
+- ❌ Lack of trust in centralized systems
+- ❌ Manual verification prone to tampering
+- ❌ No auditability or transparency
+- ❌ Admin can manipulate records
+
+## ✅ Our Solution
+
+A decentralized system where **trust comes from code, not authority**:
+- ✅ **Algorand blockchain** stores all critical records
+- ✅ **Wallet-based identity** (1 wallet = 1 vote)
+- ✅ **Immutable proofs** that anyone can verify
+- ✅ **No blind trust** in admins required
+
+---
+
+## 🏗️ Architecture
+
+```
+┌──────────────────┐     ┌─────────────────┐     ┌──────────────────┐
+│   Next.js UI     │────▶│   Pera Wallet   │────▶│  Algorand        │
+│   (Frontend)     │     │   (Signing)     │     │  TestNet         │
+└──────────────────┘     └─────────────────┘     └──────────────────┘
+                                                          │
+                                                          ▼
+                                                 ┌──────────────────┐
+                                                 │  Smart Contract  │
+                                                 │  (PyTeal)        │
+                                                 └──────────────────┘
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Key Principle:** Blockchain is the single source of truth. UI only facilitates interaction.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📦 Features
 
-## Learn More
+### 🗳️ Voting (Core Feature)
+- Connect Pera Wallet
+- One wallet = one vote (enforced by smart contract)
+- Live results from blockchain state
+- Verify on Algorand Explorer
 
-To learn more about Next.js, take a look at the following resources:
+### 📋 Attendance
+- Mark attendance with wallet signature
+- Hash stored on-chain as proof
+- Timestamped and immutable
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 🎓 Certificate Verification
+- Upload certificate → generate SHA-256 hash
+- Store hash on Algorand
+- Verify authenticity by re-hashing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🛠️ Tech Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Component | Technology |
+|-----------|------------|
+| Frontend | Next.js 16 |
+| Wallet | Pera Wallet |
+| Blockchain | Algorand TestNet |
+| Smart Contract | Python (PyTeal) |
+| Styling | CSS with Glassmorphism |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+
+- Pera Wallet app (for testing)
+- Python 3.8+ (for contract deployment)
+
+### 1. Install Dependencies
+```bash
+cd apps/web
+npm install
+```
+
+### 2. Configure Environment
+```bash
+cp .env.example .env.local
+# Edit .env.local with your Voting App ID
+```
+
+### 3. Deploy Smart Contract (Optional - if not already deployed)
+```bash
+cd contracts
+pip install -r requirements.txt
+
+# Set your mnemonic (TESTNET ONLY!)
+set DEPLOYER_MNEMONIC=your 25 word mnemonic here
+
+# Deploy
+python deploy_voting.py
+# Note the App ID from output
+```
+
+### 4. Run Development Server
+```bash
+cd apps/web
+npm run dev
+```
+
+Open http://localhost:3000
+
+---
+
+## 📁 Project Structure
+
+```
+├── apps/web/                 # Next.js Frontend
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── page.tsx          # Home page
+│   │   │   ├── vote/             # Voting module
+│   │   │   ├── attendance/       # Attendance module
+│   │   │   └── certificate/      # Certificate module
+│   │   ├── lib/
+│   │   │   └── algorand.ts       # Algorand utilities
+│   │   └── context/
+│   │       └── WalletContext.tsx # Wallet state
+│   └── .env.example
+│
+└── contracts/                # Smart Contracts
+    ├── voting.py             # PyTeal voting contract
+    ├── deploy_voting.py      # Deployment script
+    └── requirements.txt
+```
+
+---
+
+## 🔐 Why Blockchain?
+
+| Traditional System | Campus Trust System |
+|--------------------|---------------------|
+| Admin can edit | Records are immutable |
+| Trust the authority | Trust the code |
+| No audit trail | Public blockchain explorer |
+| Duplicate votes possible | 1 wallet = 1 vote |
+
+**Key Quote for Judges:**
+> "In campus systems, trust should come from math and code, not authority."
+
+---
+
+## 📊 What's On-Chain vs Off-Chain
+
+| On-Chain (Algorand) | Off-Chain (Frontend) |
+|---------------------|----------------------|
+| Vote hash & count | Poll titles, UI state |
+| Attendance proof | Session names |
+| Certificate hash | File preview |
+
+---
+
+## 🎤 Demo Flow
+
+1. **Connect Wallet** → Pera Wallet on TestNet
+2. **Cast Vote** → Opt-in → Select option → Sign transaction
+3. **Mark Attendance** → Generate session → Sign → View on explorer
+4. **Verify Certificate** → Upload → Hash matches? Authentic!
+
+---
+
+## 👥 Team
+
+Built for Hackspiration'26 at VIT Pune
+
+---
+
+## 📄 License
+
+MIT License - Built for educational purposes

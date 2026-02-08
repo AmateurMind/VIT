@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "campus-trust-system",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@perawallet/connect": "^1.5.0",
+    "algosdk": "^2.7.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
