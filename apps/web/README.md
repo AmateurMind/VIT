@@ -47,9 +47,10 @@ A decentralized system where **trust comes from code, not authority**:
 
 ### 🗳️ Voting (Core Feature)
 - Connect Pera Wallet
-- One wallet = one vote (enforced by smart contract)
-- Live results from blockchain state
-- Verify on Algorand Explorer
+- One wallet =- Cast vote → on-chain transaction
+- Show confirmation + transaction ID
+- Display live results from blockchain
+- Add "Verify on Pera Explorer" link
 
 ### 📋 Attendance
 - Mark attendance with wallet signature

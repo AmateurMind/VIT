@@ -24,7 +24,15 @@ interface VotingState {
 }
 
 export default function VotePage() {
-    const { address, isConnected, connect, peraWallet } = useWallet();
+    const {
+        address,
+        isConnected,
+        connect,
+        peraWallet,
+        isGuestMode,
+        guestSecretKey,
+        enableGuestMode
+    } = useWallet();
 
     const [appId, setAppId] = useState<number>(VOTING_APP_ID);
     const [votingState, setVotingState] = useState<VotingState | null>(null);
@@ -84,8 +92,16 @@ export default function VotePage() {
             const params = await getSuggestedParams();
             const txn = createOptInTxn(address, appId, params);
 
-            setStatus('Please sign the transaction in Pera Wallet...');
-            const signedTxns = await peraWallet.signTransaction([[{ txn }]]);
+            setStatus(isGuestMode ? 'Signing locally...' : 'Please sign the transaction in Pera Wallet...');
+            let signedTxns: Uint8Array[];
+
+            if (isGuestMode && guestSecretKey) {
+                signedTxns = [txn.signTxn(guestSecretKey)];
+            } else if (peraWallet) {
+                signedTxns = await peraWallet.signTransaction([[{ txn }]]);
+            } else {
+                throw new Error('No wallet connected');
+            }
 
             setStatus('Sending transaction to Algorand...');
             const client = getAlgodClient();
@@ -96,7 +112,7 @@ export default function VotePage() {
 
             setTxId(txId);
             setUserOptedIn(true);
-            setStatus('Successfully opted in! You can now vote.');
+            setStatus(`Successfully ${isGuestMode ? 'Guest ' : ''}opted in! You can now vote.`);
             await fetchState();
         } catch (err) {
             console.error('Opt-in error:', err);
@@ -118,8 +134,16 @@ export default function VotePage() {
             const params = await getSuggestedParams();
             const txn = createVoteTxn(address, appId, choice, params);
 
-            setStatus('Please sign the transaction in Pera Wallet...');
-            const signedTxns = await peraWallet.signTransaction([[{ txn }]]);
+            setStatus(isGuestMode ? 'Signing locally...' : 'Please sign the transaction in Pera Wallet...');
+            let signedTxns: Uint8Array[];
+
+            if (isGuestMode && guestSecretKey) {
+                signedTxns = [txn.signTxn(guestSecretKey)];
+            } else if (peraWallet) {
+                signedTxns = await peraWallet.signTransaction([[{ txn }]]);
+            } else {
+                throw new Error('No wallet connected');
+            }
 
             setStatus('Sending vote to Algorand blockchain...');
             const client = getAlgodClient();
@@ -130,7 +154,7 @@ export default function VotePage() {
 
             setTxId(result.txId);
             setUserVoted(true);
-            setStatus('🎉 Vote recorded on blockchain!');
+            setStatus(`🎉 ${isGuestMode ? 'Guest ' : ''}Vote recorded on blockchain!`);
             await fetchState();
         } catch (err) {
             console.error('Voting error:', err);
@@ -174,10 +198,43 @@ export default function VotePage() {
             {/* Connection Status */}
             {!isConnected && (
                 <div className="card connect-card">
+                    <h3>🔗 Demo Guest Mode</h3>
+                    <p style={{ marginBottom: '16px', color: 'var(--ink-muted)' }}>
+                        Already voted? Use Guest Mode to generate a temporary wallet for testing multiple votes.
+                    </p>
+                    <button onClick={enableGuestMode} className="btn btn-secondary" style={{ width: '100%', marginBottom: '12px' }}>
+                        🚀 Enter Guest Mode
+                    </button>
+
+                    <div style={{ textAlign: 'center', margin: '16px 0', color: 'var(--ink-muted)' }}>— OR —</div>
+
                     <h3>🔗 Connect Your Wallet</h3>
                     <p>You need to connect your Pera Wallet to vote.</p>
-                    <button onClick={connect} className="btn btn-primary">
+                    <button onClick={connect} className="btn btn-primary" style={{ width: '100%' }}>
                         Connect Pera Wallet
+                    </button>
+                </div>
+            )}
+
+            {/* Guest Mode Indicator */}
+            {isGuestMode && isConnected && (
+                <div className="card guest-info-card" style={{ border: '1px solid var(--accent)', background: 'rgba(59, 130, 246, 0.1)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <h3 style={{ margin: 0 }}>🚀 Demo Guest Identity</h3>
+                        <span className="status-badge open">Active</span>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', marginBottom: '8px' }}>This is a temporary wallet generated for your demo.</p>
+                    <div className="hash-display" style={{ marginBottom: '12px', fontSize: '0.8rem' }}>{address}</div>
+
+                    <div className="alert alert-warning" style={{ fontSize: '0.85rem', padding: '8px 12px' }}>
+                        💡 <strong>Note:</strong> This guest needs ~0.5 ALGO to vote.
+                        <a href="https://bank.testnet.algorand.network/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', marginLeft: '8px', textDecoration: 'underline' }}>
+                            Fund it here →
+                        </a>
+                    </div>
+
+                    <button onClick={enableGuestMode} className="btn btn-secondary" style={{ width: '100%', marginTop: '12px' }}>
+                        🆕 Generate Another Guest
                     </button>
                 </div>
             )}

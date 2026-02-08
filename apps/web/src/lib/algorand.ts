@@ -177,12 +177,12 @@ export async function hashFile(file: File): Promise<string> {
  * Get Algorand Explorer URL for a transaction
  */
 export function getExplorerUrl(txId: string): string {
-    return `https://testnet.algoexplorer.io/tx/${txId}`;
+    return `https://testnet.explorer.perawallet.app/tx/${txId}`;
 }
 
 /**
  * Get Algorand Explorer URL for an application
  */
 export function getAppExplorerUrl(appId: number): string {
-    return `https://testnet.algoexplorer.io/application/${appId}`;
+    return `https://testnet.explorer.perawallet.app/application/${appId}`;
 }

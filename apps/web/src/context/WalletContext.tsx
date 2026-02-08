@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import { PeraWalletConnect } from '@perawallet/connect';
+import algosdk from 'algosdk';
 
 interface WalletContextType {
     address: string | null;
@@ -10,6 +11,9 @@ interface WalletContextType {
     connect: () => Promise<void>;
     disconnect: () => void;
     peraWallet: PeraWalletConnect | null;
+    isGuestMode: boolean;
+    guestSecretKey: Uint8Array | null;
+    enableGuestMode: () => void;
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -19,6 +23,9 @@ const WalletContext = createContext<WalletContextType>({
     connect: async () => { },
     disconnect: () => { },
     peraWallet: null,
+    isGuestMode: false,
+    guestSecretKey: null,
+    enableGuestMode: () => { },
 });
 
 export function useWallet() {
@@ -29,10 +36,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const [address, setAddress] = useState<string | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
     const [peraWallet, setPeraWallet] = useState<PeraWalletConnect | null>(null);
+    const [isGuestMode, setIsGuestMode] = useState(false);
+    const [guestSecretKey, setGuestSecretKey] = useState<Uint8Array | null>(null);
 
     // Initialize Pera Wallet on client side
     useEffect(() => {
-        const wallet = new PeraWalletConnect();
+        const wallet = new PeraWalletConnect({
+            network: 'testnet',
+        } as any);
         setPeraWallet(wallet);
 
         // Reconnect if session exists
@@ -50,12 +61,24 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     const handleDisconnect = useCallback(() => {
         setAddress(null);
+        setIsGuestMode(false);
+        setGuestSecretKey(null);
+    }, []);
+
+    const enableGuestMode = useCallback(() => {
+        const account = algosdk.generateAccount();
+        setAddress(account.addr);
+        setGuestSecretKey(account.sk);
+        setIsGuestMode(true);
     }, []);
 
     const connect = useCallback(async () => {
         if (!peraWallet) return;
 
         setIsConnecting(true);
+        setIsGuestMode(false);
+        setGuestSecretKey(null);
+
         try {
             const accounts = await peraWallet.connect();
             if (accounts.length > 0) {
@@ -72,6 +95,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const disconnect = useCallback(() => {
         peraWallet?.disconnect();
         setAddress(null);
+        setIsGuestMode(false);
+        setGuestSecretKey(null);
     }, [peraWallet]);
 
     return (
@@ -83,6 +108,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
                 connect,
                 disconnect,
                 peraWallet,
+                isGuestMode,
+                guestSecretKey,
+                enableGuestMode,
             }}
         >
             {children}
