@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🛡️ STROTAS — Campus Trust System
+# STROTAS — Campus Trust System
 
 ### Blockchain-Secured Voting, Attendance & Certificates on Algorand
 
@@ -289,16 +289,14 @@ Step 6: Show Pera Explorer → All transactions are public & auditable
 
 ---
 
-## 👤 Team
+## Team
 
-**Built with ❤️ by Suhail** for Hackspiration'26
+**Team Strotas** — Hackspiration'26
 
 ---
 
 <div align="center">
 
-*Every vote counts. Every record is permanent. Every certificate is verifiable.*
-
-**STROTAS** — Where trust is a protocol, not a promise.
+Trust is a protocol, not a promise.
 
 </div>
