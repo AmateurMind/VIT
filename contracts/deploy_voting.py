@@ -66,7 +66,7 @@ def main() -> None:
 
     signed = txn.sign(private_key)
     txid = client.send_transaction(signed)
-    result = wait_for_confirmation(client, txid, 4)
+    result = wait_for_confirmation(client, txid, 10)
     app_id = result["application-index"]
 
     print(f"Deployer Address: {sender}")

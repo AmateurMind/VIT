@@ -3,6 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Settings, Vote, Wallet, Rocket, ExternalLink, ShieldCheck, Lock, Eye, Ban } from 'lucide-react';
 import {
     getVotingState,
     hasUserVoted,
@@ -42,25 +47,22 @@ export default function VotePage() {
     const [error, setError] = useState<string | null>(null);
     const [txId, setTxId] = useState<string | null>(null);
     const [status, setStatus] = useState<string>('');
+    const [showConfig, setShowConfig] = useState<boolean>(!VOTING_APP_ID || VOTING_APP_ID === 0);
 
-    // Poll options (can be customized)
     const options = [
-        { id: 0, label: 'Option A', emoji: '🅰️' },
-        { id: 1, label: 'Option B', emoji: '🅱️' },
+        { id: 0, label: 'Option A', code: 'OPT_A' },
+        { id: 1, label: 'Option B', code: 'OPT_B' },
     ];
 
-    // Fetch current voting state
     const fetchState = useCallback(async () => {
         if (!appId || appId === 0) {
-            setError('Voting App ID not configured. Please deploy the contract first.');
+            setError('Voting App ID not configured. Deploy the contract first.');
             return;
         }
-
         try {
             const state = await getVotingState(appId);
             setVotingState(state);
             setError(null);
-
             if (address) {
                 const hasVoted = await hasUserVoted(appId, address);
                 const optedIn = await hasOptedIn(appId, address);
@@ -75,26 +77,20 @@ export default function VotePage() {
 
     useEffect(() => {
         fetchState();
-        // Poll every 10 seconds for live updates
         const interval = setInterval(fetchState, 10000);
         return () => clearInterval(interval);
     }, [fetchState]);
 
-    // Handle opt-in to the contract
     const handleOptIn = async () => {
         if (!address || !peraWallet) return;
-
         setLoading(true);
         setStatus('Preparing opt-in transaction...');
         setError(null);
-
         try {
             const params = await getSuggestedParams();
             const txn = createOptInTxn(address, appId, params);
-
-            setStatus(isGuestMode ? 'Signing locally...' : 'Please sign the transaction in Pera Wallet...');
+            setStatus(isGuestMode ? 'Signing locally...' : 'Sign in Pera Wallet...');
             let signedTxns: Uint8Array[];
-
             if (isGuestMode && guestSecretKey) {
                 signedTxns = [txn.signTxn(guestSecretKey)];
             } else if (peraWallet) {
@@ -102,17 +98,14 @@ export default function VotePage() {
             } else {
                 throw new Error('No wallet connected');
             }
-
-            setStatus('Sending transaction to Algorand...');
+            setStatus('Sending to Algorand...');
             const client = getAlgodClient();
             const { txId } = await client.sendRawTransaction(signedTxns[0]).do();
-
-            setStatus('Confirming transaction...');
+            setStatus('Confirming...');
             await new Promise(resolve => setTimeout(resolve, 4000));
-
             setTxId(txId);
             setUserOptedIn(true);
-            setStatus(`Successfully ${isGuestMode ? 'Guest ' : ''}opted in! You can now vote.`);
+            setStatus('Opted in successfully.');
             await fetchState();
         } catch (err) {
             console.error('Opt-in error:', err);
@@ -122,21 +115,16 @@ export default function VotePage() {
         }
     };
 
-    // Handle vote submission
     const handleVote = async (choice: number) => {
         if (!address || !peraWallet) return;
-
         setLoading(true);
         setStatus(`Casting vote for ${options[choice].label}...`);
         setError(null);
-
         try {
             const params = await getSuggestedParams();
             const txn = createVoteTxn(address, appId, choice, params);
-
-            setStatus(isGuestMode ? 'Signing locally...' : 'Please sign the transaction in Pera Wallet...');
+            setStatus(isGuestMode ? 'Signing locally...' : 'Sign in Pera Wallet...');
             let signedTxns: Uint8Array[];
-
             if (isGuestMode && guestSecretKey) {
                 signedTxns = [txn.signTxn(guestSecretKey)];
             } else if (peraWallet) {
@@ -144,17 +132,14 @@ export default function VotePage() {
             } else {
                 throw new Error('No wallet connected');
             }
-
-            setStatus('Sending vote to Algorand blockchain...');
+            setStatus('Broadcasting to blockchain...');
             const client = getAlgodClient();
             const result = await client.sendRawTransaction(signedTxns[0]).do();
-
             setStatus('Confirming on-chain...');
             await new Promise(resolve => setTimeout(resolve, 4000));
-
             setTxId(result.txId);
             setUserVoted(true);
-            setStatus(`🎉 ${isGuestMode ? 'Guest ' : ''}Vote recorded on blockchain!`);
+            setStatus('Vote recorded on blockchain!');
             await fetchState();
         } catch (err) {
             console.error('Voting error:', err);
@@ -166,202 +151,275 @@ export default function VotePage() {
 
     const totalVotes = (votingState?.option0 || 0) + (votingState?.option1 || 0);
 
-    return (
-        <div className="vote-page">
-            <Link href="/" className="back-link">← Back to Home</Link>
+    const container = {
+        hidden: { opacity: 0 },
+        show: { opacity: 1, transition: { staggerChildren: 0.08 } }
+    };
+    const item = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+    };
 
-            <header className="page-header">
-                <h1>🗳️ Blockchain Voting</h1>
-                <p>One wallet = one vote. Immutable. Transparent. Verifiable.</p>
+    return (
+        <div className="min-h-screen">
+            {/* Header */}
+            <header className="flex justify-between items-center py-4 px-6 md:px-12 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-50">
+                <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                    <ArrowLeft className="w-4 h-4" />
+                    <span className="font-display text-xs uppercase tracking-[0.2em]">Back</span>
+                </Link>
+                <span className="font-display text-sm uppercase tracking-[0.2em] text-primary">Voting Module</span>
+                <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">MOD.01</Badge>
             </header>
 
-            {/* App ID Input (for demo/testing) */}
-            {(!VOTING_APP_ID || VOTING_APP_ID === 0) && (
-                <div className="card config-card">
-                    <h3>⚙️ Configuration</h3>
-                    <p>Enter your deployed Voting App ID:</p>
-                    <div className="input-group">
-                        <input
-                            type="number"
-                            value={appId || ''}
-                            onChange={(e) => setAppId(Number(e.target.value))}
-                            placeholder="Enter App ID"
-                            className="input"
-                        />
-                        <button onClick={fetchState} className="btn btn-secondary">
-                            Load Poll
-                        </button>
-                    </div>
-                </div>
-            )}
+            <main className="max-w-3xl mx-auto px-6 md:px-12 py-12">
+                <motion.div variants={container} initial="hidden" animate="show">
+                    {/* Page Title */}
+                    <motion.div variants={item} className="text-center mb-10">
+                        <Vote className="w-10 h-10 text-primary mx-auto mb-4" />
+                        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-primary text-glow mb-2">
+                            BLOCKCHAIN VOTING
+                        </h1>
+                        <p className="text-sm text-muted-foreground">One wallet = one vote. Immutable. Transparent. Verifiable.</p>
+                    </motion.div>
 
-            {/* Connection Status */}
-            {!isConnected && (
-                <div className="card connect-card">
-                    <h3>🔗 Demo Guest Mode</h3>
-                    <p style={{ marginBottom: '16px', color: 'var(--ink-muted)' }}>
-                        Already voted? Use Guest Mode to generate a temporary wallet for testing multiple votes.
-                    </p>
-                    <button onClick={enableGuestMode} className="btn btn-secondary" style={{ width: '100%', marginBottom: '12px' }}>
-                        🚀 Enter Guest Mode
-                    </button>
-
-                    <div style={{ textAlign: 'center', margin: '16px 0', color: 'var(--ink-muted)' }}>— OR —</div>
-
-                    <h3>🔗 Connect Your Wallet</h3>
-                    <p>You need to connect your Pera Wallet to vote.</p>
-                    <button onClick={connect} className="btn btn-primary" style={{ width: '100%' }}>
-                        Connect Pera Wallet
-                    </button>
-                </div>
-            )}
-
-            {/* Guest Mode Indicator */}
-            {isGuestMode && isConnected && (
-                <div className="card guest-info-card" style={{ border: '1px solid var(--accent)', background: 'rgba(59, 130, 246, 0.1)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <h3 style={{ margin: 0 }}>🚀 Demo Guest Identity</h3>
-                        <span className="status-badge open">Active</span>
-                    </div>
-                    <p style={{ fontSize: '0.85rem', marginBottom: '8px' }}>This is a temporary wallet generated for your demo.</p>
-                    <div className="hash-display" style={{ marginBottom: '12px', fontSize: '0.8rem' }}>{address}</div>
-
-                    <div className="alert alert-warning" style={{ fontSize: '0.85rem', padding: '8px 12px' }}>
-                        💡 <strong>Note:</strong> This guest needs ~0.5 ALGO to vote.
-                        <a href="https://bank.testnet.algorand.network/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', marginLeft: '8px', textDecoration: 'underline' }}>
-                            Fund it here →
-                        </a>
-                    </div>
-
-                    <button onClick={enableGuestMode} className="btn btn-secondary" style={{ width: '100%', marginTop: '12px' }}>
-                        🆕 Generate Another Guest
-                    </button>
-                </div>
-            )}
-
-            {/* Error Display */}
-            {error && (
-                <div className="alert alert-error">
-                    ⚠️ {error}
-                </div>
-            )}
-
-            {/* Status Display */}
-            {status && !error && (
-                <div className="alert alert-info">
-                    ⏳ {status}
-                </div>
-            )}
-
-            {/* Transaction Success */}
-            {txId && (
-                <div className="alert alert-success">
-                    ✅ Transaction confirmed!
-                    <a href={getExplorerUrl(txId)} target="_blank" rel="noopener noreferrer" className="explorer-link">
-                        View on Algorand Explorer →
-                    </a>
-                </div>
-            )}
-
-            {/* Voting State */}
-            {votingState && (
-                <>
-                    {/* Poll Status */}
-                    <div className="card status-card">
-                        <div className="status-row">
-                            <span className={`status-badge ${votingState.isOpen ? 'open' : 'closed'}`}>
-                                {votingState.isOpen ? '🟢 Voting Open' : '🔴 Voting Closed'}
-                            </span>
-                            <span className="total-votes">
-                                {totalVotes} vote{totalVotes !== 1 ? 's' : ''} recorded
-                            </span>
-                        </div>
-                        {appId > 0 && (
-                            <a href={getAppExplorerUrl(appId)} target="_blank" rel="noopener noreferrer" className="app-link">
-                                View App on Explorer (ID: {appId})
-                            </a>
-                        )}
-                    </div>
-
-                    {/* Results Display */}
-                    <div className="card results-card">
-                        <h3>📊 Live Results</h3>
-                        <div className="results">
-                            {options.map((option) => {
-                                const votes = option.id === 0 ? votingState.option0 : votingState.option1;
-                                const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
-
-                                return (
-                                    <div key={option.id} className="result-bar">
-                                        <div className="result-label">
-                                            <span>{option.emoji} {option.label}</span>
-                                            <span className="result-count">{votes} votes ({percentage.toFixed(1)}%)</span>
-                                        </div>
-                                        <div className="progress-bar">
-                                            <div
-                                                className="progress-fill"
-                                                style={{ width: `${percentage}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Voting Actions */}
-                    {isConnected && votingState.isOpen && (
-                        <div className="card voting-card">
-                            {userVoted ? (
-                                <div className="voted-message">
-                                    <h3>✅ You have already voted</h3>
-                                    <p>Your vote is permanently recorded on the Algorand blockchain.</p>
+                    {/* Config Card */}
+                    <motion.div variants={item}>
+                        <Card className="bg-card border-border mb-5">
+                            <CardHeader className="pb-2">
+                                <div className="flex justify-between items-center cursor-pointer" onClick={() => setShowConfig(!showConfig)}>
+                                    <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                        <Settings className="w-4 h-4 text-primary" /> Election Config {showConfig ? '▼' : '▶'}
+                                    </CardTitle>
+                                    {!showConfig && (
+                                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setShowConfig(true); }} className="text-xs font-display uppercase tracking-wider text-muted-foreground">
+                                            Change
+                                        </Button>
+                                    )}
                                 </div>
-                            ) : !userOptedIn ? (
-                                <>
-                                    <h3>📝 Step 1: Opt-In to Voting Contract</h3>
-                                    <p>Before voting, you need to opt-in to the smart contract.</p>
-                                    <button
-                                        onClick={handleOptIn}
-                                        disabled={loading}
-                                        className="btn btn-primary"
-                                    >
-                                        {loading ? 'Processing...' : 'Opt-In to Vote'}
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <h3>🗳️ Cast Your Vote</h3>
-                                    <p>Choose your option below. This action is irreversible.</p>
-                                    <div className="voting-buttons">
-                                        {options.map((option) => (
-                                            <button
-                                                key={option.id}
-                                                onClick={() => handleVote(option.id)}
-                                                disabled={loading}
-                                                className="btn btn-vote"
-                                            >
-                                                {option.emoji} Vote for {option.label}
-                                            </button>
-                                        ))}
+                            </CardHeader>
+                            {showConfig && (
+                                <CardContent className="pt-2">
+                                    <p className="text-xs text-muted-foreground mb-3">Enter the App ID for the election:</p>
+                                    <div className="flex gap-3">
+                                        <input
+                                            type="number"
+                                            value={appId || ''}
+                                            onChange={(e) => setAppId(Number(e.target.value))}
+                                            placeholder="App ID"
+                                            className="flex-1 bg-secondary border border-border px-3 py-2 text-sm font-mono text-foreground focus:outline-none focus:border-primary"
+                                        />
+                                        <Button variant="outline" size="sm" onClick={() => { fetchState(); setShowConfig(false); }} className="font-display uppercase tracking-wider text-xs border-primary/40 text-primary">
+                                            Load
+                                        </Button>
                                     </div>
-                                </>
+                                    {VOTING_APP_ID > 0 && appId !== VOTING_APP_ID && (
+                                        <p className="text-[10px] font-mono text-muted-foreground mt-2">
+                                            Default: <a href="#" onClick={(e) => { e.preventDefault(); setAppId(VOTING_APP_ID); }} className="text-primary">{VOTING_APP_ID}</a>
+                                        </p>
+                                    )}
+                                </CardContent>
                             )}
-                        </div>
-                    )}
-                </>
-            )}
+                        </Card>
+                    </motion.div>
 
-            {/* Trust Explanation */}
-            <div className="card info-card">
-                <h3>🔐 Why Blockchain?</h3>
-                <ul className="trust-list">
-                    <li><strong>1 wallet = 1 vote</strong> — No duplicate voting possible</li>
-                    <li><strong>Immutable</strong> — Once recorded, votes cannot be changed</li>
-                    <li><strong>Transparent</strong> — Anyone can verify results on-chain</li>
-                    <li><strong>No admin control</strong> — Smart contract enforces rules</li>
-                </ul>
-            </div>
+                    {/* Connect / Guest Mode */}
+                    {!isConnected && (
+                        <motion.div variants={item}>
+                            <Card className="bg-card border-border mb-5">
+                                <CardContent className="pt-6 space-y-4">
+                                    <div className="text-center">
+                                        <Rocket className="w-8 h-8 text-primary mx-auto mb-3" />
+                                        <h3 className="font-display text-sm uppercase tracking-wider mb-1">Demo Guest Mode</h3>
+                                        <p className="text-xs text-muted-foreground mb-4">Generate a temporary wallet for testing.</p>
+                                        <Button onClick={enableGuestMode} variant="outline" className="w-full font-display uppercase tracking-wider text-xs border-primary/40 text-primary hover:bg-primary/10 mb-4">
+                                            Enter Guest Mode
+                                        </Button>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                        <div className="h-px flex-1 bg-border" />
+                                        <span>OR</span>
+                                        <div className="h-px flex-1 bg-border" />
+                                    </div>
+                                    <div className="text-center">
+                                        <Wallet className="w-8 h-8 text-primary mx-auto mb-3" />
+                                        <h3 className="font-display text-sm uppercase tracking-wider mb-1">Connect Wallet</h3>
+                                        <p className="text-xs text-muted-foreground mb-4">Connect Pera Wallet to vote.</p>
+                                        <Button onClick={connect} className="w-full font-display uppercase tracking-wider text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                                            Connect Pera Wallet
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+
+                    {/* Guest Mode Info */}
+                    {isGuestMode && isConnected && (
+                        <motion.div variants={item}>
+                            <Card className="bg-card border-primary/30 mb-5">
+                                <CardContent className="pt-6">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="font-display text-sm uppercase tracking-wider flex items-center gap-2">
+                                            <Rocket className="w-4 h-4 text-primary" /> Guest Identity
+                                        </h3>
+                                        <Badge variant="outline" className="text-[10px] border-green-500/50 text-green-400">Active</Badge>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mb-2">Temporary wallet for demo purposes.</p>
+                                    <div className="bg-secondary p-3 font-mono text-[11px] text-primary break-all mb-3 border border-border">{address}</div>
+                                    <div className="bg-primary/10 border border-primary/20 p-3 text-xs text-primary mb-3">
+                                        💡 This guest needs ~0.5 ALGO.{' '}
+                                        <a href="https://bank.testnet.algorand.network/" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Fund it →</a>
+                                    </div>
+                                    <Button onClick={enableGuestMode} variant="outline" size="sm" className="w-full font-display uppercase tracking-wider text-xs border-primary/40 text-primary">
+                                        Generate Another Guest
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+
+                    {/* Alerts */}
+                    {error && (
+                        <motion.div variants={item} className="bg-destructive/10 border border-destructive/30 p-4 mb-5 text-sm text-red-400">
+                            ⚠️ {error}
+                        </motion.div>
+                    )}
+                    {status && !error && (
+                        <motion.div variants={item} className="bg-primary/5 border border-primary/20 p-4 mb-5 text-sm text-primary font-mono">
+                            ⏳ {status}
+                        </motion.div>
+                    )}
+                    {txId && (
+                        <motion.div variants={item} className="bg-green-500/10 border border-green-500/30 p-4 mb-5 text-sm text-green-400">
+                            ✅ Transaction confirmed!{' '}
+                            <a href={getExplorerUrl(txId)} target="_blank" rel="noopener noreferrer" className="underline font-semibold inline-flex items-center gap-1">
+                                View on Explorer <ExternalLink className="w-3 h-3" />
+                            </a>
+                        </motion.div>
+                    )}
+
+                    {/* Voting State */}
+                    {votingState && (
+                        <>
+                            {/* Status */}
+                            <motion.div variants={item}>
+                                <Card className="bg-card border-border mb-5">
+                                    <CardContent className="pt-6">
+                                        <div className="flex justify-between items-center flex-wrap gap-3 mb-3">
+                                            <Badge variant={votingState.isOpen ? "default" : "destructive"} className="font-display text-[10px] uppercase tracking-wider">
+                                                {votingState.isOpen ? '● OPEN' : '● CLOSED'}
+                                            </Badge>
+                                            <span className="text-xs font-mono text-muted-foreground">
+                                                {totalVotes} vote{totalVotes !== 1 ? 's' : ''} recorded
+                                            </span>
+                                        </div>
+                                        {appId > 0 && (
+                                            <a href={getAppExplorerUrl(appId)} target="_blank" rel="noopener noreferrer" className="text-xs text-primary font-mono inline-flex items-center gap-1 hover:underline">
+                                                App ID: {appId} <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+
+                            {/* Results */}
+                            <motion.div variants={item}>
+                                <Card className="bg-card border-border mb-5">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                            <Eye className="w-4 h-4 text-primary" /> Live Results
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {options.map((option) => {
+                                            const votes = option.id === 0 ? votingState.option0 : votingState.option1;
+                                            const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
+                                            return (
+                                                <div key={option.id}>
+                                                    <div className="flex justify-between text-xs mb-1">
+                                                        <span className="font-display uppercase tracking-wider">{option.code} — {option.label}</span>
+                                                        <span className="font-mono text-muted-foreground">{votes} ({percentage.toFixed(1)}%)</span>
+                                                    </div>
+                                                    <div className="h-5 bg-secondary border border-border overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-primary transition-all duration-500"
+                                                            style={{ width: `${percentage}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+
+                            {/* Voting Actions */}
+                            {isConnected && votingState.isOpen && (
+                                <motion.div variants={item}>
+                                    <Card className="bg-card border-border mb-5">
+                                        <CardContent className="pt-6">
+                                            {userVoted ? (
+                                                <div className="text-center py-4">
+                                                    <ShieldCheck className="w-10 h-10 text-green-400 mx-auto mb-3" />
+                                                    <h3 className="font-display text-sm uppercase tracking-wider text-green-400 mb-1">Vote Recorded</h3>
+                                                    <p className="text-xs text-muted-foreground">Permanently stored on Algorand.</p>
+                                                </div>
+                                            ) : !userOptedIn ? (
+                                                <div className="text-center">
+                                                    <Lock className="w-8 h-8 text-primary mx-auto mb-3" />
+                                                    <h3 className="font-display text-sm uppercase tracking-wider mb-1">Step 1: Opt-In</h3>
+                                                    <p className="text-xs text-muted-foreground mb-4">Register with the smart contract before voting.</p>
+                                                    <Button onClick={handleOptIn} disabled={loading} className="w-full font-display uppercase tracking-wider text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                                                        {loading ? 'Processing...' : 'Opt-In to Vote'}
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <h3 className="font-display text-sm uppercase tracking-wider mb-1 text-center">Cast Your Vote</h3>
+                                                    <p className="text-xs text-muted-foreground mb-4 text-center">This action is irreversible.</p>
+                                                    <div className="flex gap-4 flex-wrap">
+                                                        {options.map((option) => (
+                                                            <Button
+                                                                key={option.id}
+                                                                onClick={() => handleVote(option.id)}
+                                                                disabled={loading}
+                                                                variant="outline"
+                                                                className="flex-1 min-w-[160px] h-16 font-display uppercase tracking-wider text-sm border-2 border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+                                                            >
+                                                                {option.code} — {option.label}
+                                                            </Button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            )}
+                        </>
+                    )}
+
+                    {/* Info */}
+                    <motion.div variants={item}>
+                        <Card className="bg-card border-border">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                    <ShieldCheck className="w-4 h-4 text-primary" /> Why Blockchain?
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ul className="space-y-3 text-xs text-muted-foreground">
+                                    <li className="flex items-start gap-2"><Ban className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">1 wallet = 1 vote</strong> — No duplicate voting</span></li>
+                                    <li className="flex items-start gap-2"><Lock className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Immutable</strong> — Votes cannot be changed</span></li>
+                                    <li className="flex items-start gap-2"><Eye className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Transparent</strong> — Anyone can verify on-chain</span></li>
+                                    <li className="flex items-start gap-2"><ShieldCheck className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">No admin control</strong> — Smart contract enforces rules</span></li>
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                </motion.div>
+            </main>
         </div>
     );
 }

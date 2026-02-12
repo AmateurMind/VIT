@@ -3,6 +3,11 @@
 import { useState } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Activity, Wallet, ExternalLink, ShieldCheck, Hash, Clock, Fingerprint, CheckCircle } from 'lucide-react';
 import {
     createHashStoreTxn,
     getSuggestedParams,
@@ -24,25 +29,23 @@ export default function AttendancePage() {
     const [error, setError] = useState<string | null>(null);
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
     const [status, setStatus] = useState<string>('');
+    const [successTxId, setSuccessTxId] = useState<string | null>(null);
 
-    // Generate unique session ID (for demo)
     const generateSessionId = () => {
         const date = new Date().toISOString().split('T')[0];
         const random = Math.random().toString(36).substring(2, 8).toUpperCase();
         setSessionId(`SESSION-${date}-${random}`);
     };
 
-    // Mark attendance on blockchain
     const handleMarkAttendance = async () => {
         if (!address || !peraWallet || !sessionId) {
             setError('Please enter or generate a session ID');
             return;
         }
-
         setLoading(true);
         setStatus('Preparing attendance transaction...');
         setError(null);
-
+        setSuccessTxId(null);
         try {
             const timestamp = new Date().toISOString();
             const attendanceData = {
@@ -50,8 +53,6 @@ export default function AttendancePage() {
                 studentWallet: address.slice(0, 10) + '...',
                 timestamp,
             };
-
-            // Create hash of attendance data
             const hash = await crypto.subtle.digest(
                 'SHA-256',
                 new TextEncoder().encode(JSON.stringify(attendanceData))
@@ -63,24 +64,25 @@ export default function AttendancePage() {
             const params = await getSuggestedParams();
             const txn = createHashStoreTxn(address, hashHex, 'ATTENDANCE', params);
 
-            setStatus('Please sign the transaction in Pera Wallet...');
+            setStatus('Sign in Pera Wallet...');
             const signedTxns = await peraWallet.signTransaction([[{ txn }]]);
 
-            setStatus('Recording attendance on Algorand blockchain...');
+            setStatus('Recording on Algorand...');
             const client = getAlgodClient();
             const result = await client.sendRawTransaction(signedTxns[0]).do();
+            const txId = txn.txID() || result.txId || result?.txid || '';
+            console.log('Transaction result:', result, 'txId:', txId);
 
             setStatus('Confirming on-chain...');
             await new Promise(resolve => setTimeout(resolve, 4000));
 
-            // Add to local records
             const newRecord: AttendanceRecord = {
                 sessionId,
                 timestamp,
-                txId: result.txId,
+                txId: txId,
             };
             setRecords(prev => [newRecord, ...prev]);
-
+            setSuccessTxId(txId);
             setStatus('');
             setSessionId('');
         } catch (err) {
@@ -91,116 +93,181 @@ export default function AttendancePage() {
         }
     };
 
-    return (
-        <div className="attendance-page">
-            <Link href="/" className="back-link">← Back to Home</Link>
+    const container = {
+        hidden: { opacity: 0 },
+        show: { opacity: 1, transition: { staggerChildren: 0.08 } }
+    };
+    const item = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+    };
 
-            <header className="page-header">
-                <h1>📋 Blockchain Attendance</h1>
-                <p>Tamper-proof attendance records. No proxy. No disputes.</p>
+    return (
+        <div className="min-h-screen">
+            {/* Header */}
+            <header className="flex justify-between items-center py-4 px-6 md:px-12 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-50">
+                <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                    <ArrowLeft className="w-4 h-4" />
+                    <span className="font-display text-xs uppercase tracking-[0.2em]">Back</span>
+                </Link>
+                <span className="font-display text-sm uppercase tracking-[0.2em] text-primary">Attendance Module</span>
+                <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">MOD.02</Badge>
             </header>
 
-            {/* Connection Status */}
-            {!isConnected && (
-                <div className="card connect-card">
-                    <h3>🔗 Connect Your Wallet</h3>
-                    <p>Connect your Pera Wallet to mark attendance.</p>
-                    <button onClick={connect} className="btn btn-primary">
-                        Connect Pera Wallet
-                    </button>
-                </div>
-            )}
+            <main className="max-w-3xl mx-auto px-6 md:px-12 py-12">
+                <motion.div variants={container} initial="hidden" animate="show">
+                    {/* Page Title */}
+                    <motion.div variants={item} className="text-center mb-10">
+                        <Activity className="w-10 h-10 text-primary mx-auto mb-4" />
+                        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-primary text-glow mb-2">
+                            SMART ATTENDANCE
+                        </h1>
+                        <p className="text-sm text-muted-foreground">Tamper-proof records. No proxy. No disputes.</p>
+                    </motion.div>
 
-            {/* Error Display */}
-            {error && (
-                <div className="alert alert-error">
-                    ⚠️ {error}
-                </div>
-            )}
-
-            {/* Status Display */}
-            {status && (
-                <div className="alert alert-info">
-                    ⏳ {status}
-                </div>
-            )}
-
-            {/* Mark Attendance Section */}
-            {isConnected && (
-                <div className="card">
-                    <h3>📝 Mark Your Attendance</h3>
-                    <p style={{ marginBottom: '16px' }}>
-                        Your attendance will be permanently recorded on Algorand blockchain.
-                    </p>
-
-                    <div className="input-group" style={{ marginBottom: '16px' }}>
-                        <input
-                            type="text"
-                            value={sessionId}
-                            onChange={(e) => setSessionId(e.target.value)}
-                            placeholder="Enter Session ID"
-                            className="input"
-                        />
-                        <button onClick={generateSessionId} className="btn btn-secondary">
-                            Generate
-                        </button>
-                    </div>
-
-                    {sessionId && (
-                        <div className="alert alert-info" style={{ marginBottom: '16px' }}>
-                            Session ID: <strong>{sessionId}</strong>
-                        </div>
+                    {/* Connect */}
+                    {!isConnected && (
+                        <motion.div variants={item}>
+                            <Card className="bg-card border-border mb-5">
+                                <CardContent className="pt-6 text-center">
+                                    <Wallet className="w-8 h-8 text-primary mx-auto mb-3" />
+                                    <h3 className="font-display text-sm uppercase tracking-wider mb-1">Connect Wallet</h3>
+                                    <p className="text-xs text-muted-foreground mb-4">Connect Pera Wallet to mark attendance.</p>
+                                    <Button onClick={connect} className="w-full font-display uppercase tracking-wider text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                                        Connect Pera Wallet
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
                     )}
 
-                    <button
-                        onClick={handleMarkAttendance}
-                        disabled={loading || !sessionId}
-                        className="btn btn-primary"
-                        style={{ width: '100%' }}
-                    >
-                        {loading ? 'Recording...' : '✅ Mark Present on Blockchain'}
-                    </button>
-                </div>
-            )}
-
-            {/* Attendance Records */}
-            {records.length > 0 && (
-                <div className="card">
-                    <h3>📊 Your Attendance Records</h3>
-                    <div className="records-list">
-                        {records.map((record, index) => (
-                            <div key={index} className="record-item">
-                                <div className="record-info">
-                                    <strong>{record.sessionId}</strong>
-                                    <span className="record-time">
-                                        {new Date(record.timestamp).toLocaleString()}
-                                    </span>
-                                </div>
+                    {/* Alerts */}
+                    {error && (
+                        <motion.div variants={item} className="bg-destructive/10 border border-destructive/30 p-4 mb-5 text-sm text-red-400">
+                            ⚠️ {error}
+                        </motion.div>
+                    )}
+                    {status && (
+                        <motion.div variants={item} className="bg-primary/5 border border-primary/20 p-4 mb-5 text-sm text-primary font-mono">
+                            ⏳ {status}
+                        </motion.div>
+                    )}
+                    {successTxId && (
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="bg-green-600 border-2 border-green-400 p-5 mb-5 rounded-md text-white flex flex-col gap-3">
+                            <div className="flex items-center gap-2 font-bold text-base">
+                                <CheckCircle className="w-5 h-5" />
+                                <span>Attendance Marked Successfully!</span>
+                            </div>
+                            <div className="pl-7 space-y-2">
                                 <a
-                                    href={getExplorerUrl(record.txId)}
+                                    href={getExplorerUrl(successTxId)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="btn btn-secondary"
-                                    style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded bg-white text-green-800 font-bold text-xs hover:bg-green-100 transition-colors"
                                 >
-                                    View on Explorer
+                                    View Transaction on Explorer <ExternalLink className="w-3 h-3" />
                                 </a>
+                                <p className="text-xs text-green-200 break-all font-mono">
+                                    {getExplorerUrl(successTxId)}
+                                </p>
                             </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+                        </motion.div>
+                    )}
 
-            {/* How It Works */}
-            <div className="card info-card">
-                <h3>🔐 How Blockchain Attendance Works</h3>
-                <ul className="trust-list">
-                    <li><strong>Wallet Identity</strong> — Your wallet address acts as your unique ID</li>
-                    <li><strong>Hash Storage</strong> — Attendance data hash is stored on-chain</li>
-                    <li><strong>Timestamped</strong> — Exact time is captured in the transaction</li>
-                    <li><strong>Immutable Proof</strong> — Once recorded, it cannot be altered</li>
-                </ul>
-            </div>
+                    {/* Mark Attendance */}
+                    {isConnected && (
+                        <motion.div variants={item}>
+                            <Card className="bg-card border-border mb-5">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                        <Fingerprint className="w-4 h-4 text-primary" /> Mark Attendance
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-xs text-muted-foreground mb-4">Your attendance will be permanently recorded on Algorand.</p>
+                                    <div className="flex gap-3 mb-4">
+                                        <input
+                                            type="text"
+                                            value={sessionId}
+                                            onChange={(e) => setSessionId(e.target.value)}
+                                            placeholder="Session ID"
+                                            className="flex-1 bg-secondary border border-border px-3 py-2 text-sm font-mono text-foreground focus:outline-none focus:border-primary"
+                                        />
+                                        <Button variant="outline" size="sm" onClick={generateSessionId} className="font-display uppercase tracking-wider text-xs border-primary/40 text-primary">
+                                            Generate
+                                        </Button>
+                                    </div>
+                                    {sessionId && (
+                                        <div className="bg-primary/5 border border-primary/20 p-3 mb-4 text-xs font-mono text-primary">
+                                            Session: <strong>{sessionId}</strong>
+                                        </div>
+                                    )}
+                                    <Button
+                                        onClick={handleMarkAttendance}
+                                        disabled={loading || !sessionId}
+                                        className="w-full font-display uppercase tracking-wider text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                                    >
+                                        {loading ? 'Recording...' : 'Mark Present on Blockchain'}
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+
+                    {/* Records */}
+                    {records.length > 0 && (
+                        <motion.div variants={item}>
+                            <Card className="bg-card border-border mb-5">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                        <Clock className="w-4 h-4 text-primary" /> Your Records
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {records.map((record, index) => (
+                                        <div key={index} className="flex justify-between items-center p-3 bg-secondary border border-border flex-wrap gap-3">
+                                            <div className="space-y-1">
+                                                <strong className="text-xs font-display uppercase tracking-wider text-foreground">{record.sessionId}</strong>
+                                                <p className="text-[10px] font-mono text-muted-foreground">
+                                                    {new Date(record.timestamp).toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <Button variant="outline" size="sm" className="text-xs font-display uppercase tracking-wider border-primary/40 text-primary" asChild>
+                                                <a
+                                                    href={getExplorerUrl(record.txId)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    Explorer <ExternalLink className="w-3 h-3 ml-1" />
+                                                </a>
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+
+                    {/* Info */}
+                    <motion.div variants={item}>
+                        <Card className="bg-card border-border">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                    <ShieldCheck className="w-4 h-4 text-primary" /> How It Works
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ul className="space-y-3 text-xs text-muted-foreground">
+                                    <li className="flex items-start gap-2"><Fingerprint className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Wallet Identity</strong> — Your wallet is your unique ID</span></li>
+                                    <li className="flex items-start gap-2"><Hash className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Hash Storage</strong> — Data hash is stored on-chain</span></li>
+                                    <li className="flex items-start gap-2"><Clock className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Timestamped</strong> — Exact time in the transaction</span></li>
+                                    <li className="flex items-start gap-2"><ShieldCheck className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Immutable</strong> — Once recorded, cannot be altered</span></li>
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                </motion.div>
+            </main>
         </div>
     );
 }

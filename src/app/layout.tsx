@@ -1,26 +1,38 @@
 import './globals.css';
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { Orbitron, Rajdhani } from 'next/font/google';
 import { WalletProvider } from '@/context/WalletContext';
+import { cn } from '@/lib/utils';
+
+const orbitron = Orbitron({
+  subsets: ['latin'],
+  variable: '--font-orbitron',
+  display: 'swap',
+});
+
+const rajdhani = Rajdhani({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-rajdhani',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'Campus Trust System | Blockchain-Secured Voting, Attendance & Certificates',
-  description: 'A decentralized campus system built on Algorand blockchain for tamper-proof voting, attendance, and certificate verification.',
+  title: 'STROTAS | Campus Trust System',
+  description: 'Decentralized Voting & Verification System.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
-      <body>
+    <html lang="en" suppressHydrationWarning className="dark">
+      <body className={cn(
+        "min-h-screen bg-background font-sans antialiased",
+        orbitron.variable,
+        rajdhani.variable
+      )}>
         <WalletProvider>
-          <main className="container">
-            {children}
-          </main>
+          {children}
         </WalletProvider>
       </body>
     </html>
