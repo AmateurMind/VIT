@@ -1,16 +1,14 @@
-# 🎓 Campus Trust System (Algorand Monorepo)
+# 🎓 Campus Trust System
 
 A decentralized, blockchain-secured platform for campus voting, attendance tracking, and certificate verification. Built for **Hackspiration'26**.
 
 ## 📁 Project Structure
 
-This project is organized into a modular structure to separate concerns and ensure transparency:
-
 | Directory | Purpose | Key Tech |
 | :--- | :--- | :--- |
-| **[`apps/`](./apps/web)** | The user-facing Next.js web application. | Next.js, Pera Wallet, algosdk |
-| **[`contracts/`](./contracts)** | Smart contracts and deployment scripts. | Python (PyTeal), Algorand SDK |
-| **[`docs/`](./docs)** | Project documentation, presentations, and technical diagrams. | Markdown, Images |
+| **`src/`** | Next.js app source (pages, components, context, lib) | Next.js, Pera Wallet, algosdk |
+| **[`contracts/`](./contracts)** | Smart contracts and deployment scripts | Python (PyTeal), Algorand SDK |
+| **[`docs/`](./docs)** | Documentation, presentations, and diagrams | Markdown |
 
 ---
 
@@ -28,15 +26,12 @@ The system follows a **Pure Decentralized Architecture**:
 ## 🚀 Getting Started
 
 ### 1. Web Application
-Navigate to the web app directory to start the frontend:
 ```bash
-cd apps/web
 npm install
 npm run dev
 ```
 
 ### 2. Smart Contracts
-Navigate to the contracts directory to deploy or modify the voting logic:
 ```bash
 cd contracts
 pip install -r requirements.txt
@@ -44,10 +39,7 @@ python deploy_voting.py
 ```
 
 ### 3. Documentation
-Technical specifications and demo presentation materials can be found in:
-```bash
-cd docs
-```
+Technical specifications and demo presentation materials can be found in `docs/`.
 
 ---
 
