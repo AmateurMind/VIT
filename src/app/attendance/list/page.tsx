@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { fetchAttendanceForSession, getExplorerUrl, type AttendanceRecord } from '@/lib/algorand';
+import {
+  fetchAttendanceForSession,
+  fetchAttendanceSessionsSummary,
+  getExplorerUrl,
+  type AttendanceRecord,
+  type AttendanceSessionSummary
+} from '@/lib/algorand';
 
 export default function AttendanceListPage() {
   const searchParams = useSearchParams();
@@ -11,8 +17,10 @@ export default function AttendanceListPage() {
 
   const [sessionId, setSessionId] = useState(initialSessionId);
   const [loading, setLoading] = useState(false);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const [error, setError] = useState('');
   const [rows, setRows] = useState<AttendanceRecord[]>([]);
+  const [sessions, setSessions] = useState<AttendanceSessionSummary[]>([]);
 
   const canFetch = useMemo(() => sessionId.trim().length > 0, [sessionId]);
 
@@ -30,7 +38,27 @@ export default function AttendanceListPage() {
     }
   };
 
+  const fetchSessions = async () => {
+    setSessionsLoading(true);
+    try {
+      const data = await fetchAttendanceSessionsSummary();
+      setSessions(data);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  const studentsPresent = useMemo(() => {
+    const unique = new Set<string>();
+    for (const row of rows) {
+      if (row.studentName?.trim()) unique.add(row.studentName.trim());
+      else if (row.sender) unique.add(row.sender);
+    }
+    return Array.from(unique);
+  }, [rows]);
+
   useEffect(() => {
+    fetchSessions();
     if (initialSessionId) {
       fetchList();
     }
@@ -63,6 +91,42 @@ export default function AttendanceListPage() {
 
       {error ? <p className="text-red-600 mb-4">{error}</p> : null}
 
+      <div className="border p-3 mb-4">
+        <h2 className="font-semibold mb-2">Session List</h2>
+        {sessionsLoading ? <p>Loading sessions...</p> : null}
+        {!sessionsLoading && sessions.length === 0 ? <p>No sessions found.</p> : null}
+        {!sessionsLoading && sessions.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {sessions.map((s) => (
+              <button
+                key={s.sessionId}
+                onClick={() => {
+                  setSessionId(s.sessionId);
+                  setTimeout(() => fetchList(), 0);
+                }}
+                className="border px-2 py-1 text-left"
+              >
+                <div className="font-mono text-xs">{s.sessionId}</div>
+                <div className="text-xs">Students: {s.presentStudents}</div>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="border p-3 mb-4">
+        <h2 className="font-semibold mb-2">Students Present So Far</h2>
+        {studentsPresent.length === 0 ? (
+          <p>No students for selected session.</p>
+        ) : (
+          <ul className="list-disc pl-5">
+            {studentsPresent.map((name) => (
+              <li key={name}>{name}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <p className="mb-3">Total Records: {rows.length}</p>
 
       <div className="overflow-auto border">
@@ -94,4 +158,3 @@ export default function AttendanceListPage() {
     </main>
   );
 }
-

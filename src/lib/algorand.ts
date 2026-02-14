@@ -11,6 +11,7 @@ const debugLog = (...args: unknown[]) => console.log('[ALGORAND]', new Date().to
 const ALGOD_SERVER = process.env.NEXT_PUBLIC_ALGOD_SERVER || 'https://testnet-api.algonode.cloud';
 const ALGOD_PORT = process.env.NEXT_PUBLIC_ALGOD_PORT || '443';
 const ALGOD_TOKEN = process.env.NEXT_PUBLIC_ALGOD_TOKEN || '';
+const ATTENDANCE_LOOKBACK_ROUNDS = 300000;
 
 // Voting App ID (set after deployment)
 export const VOTING_APP_ID = Number(process.env.NEXT_PUBLIC_VOTING_APP_ID) || 0;
@@ -50,6 +51,25 @@ export interface AttendanceRecord {
         long: number;
     };
     distance?: number; // Calculated on client
+}
+
+export interface AttendanceSessionSummary {
+    sessionId: string;
+    totalTransactions: number;
+    presentStudents: number;
+    latestTimestamp: string;
+}
+
+async function getRecentMinRound(): Promise<number | undefined> {
+    try {
+        const client = getAlgodClient();
+        const status = await client.status().do();
+        const currentRound = status['last-round'] || status['lastRound'] || 0;
+        if (!currentRound) return undefined;
+        return Math.max(1, Number(currentRound) - ATTENDANCE_LOOKBACK_ROUNDS);
+    } catch {
+        return undefined;
+    }
 }
 
 /**
@@ -100,11 +120,19 @@ export async function fetchCertificateTransactions(address: string): Promise<Cer
 export async function fetchAttendanceForSession(sessionId: string): Promise<AttendanceRecord[]> {
     const indexer = getIndexerClient();
     try {
-        const response = await indexer.searchForTransactions()
+        const sessionPrefix = `{"type":"ATTENDANCE","sessionId":"${sessionId}"`;
+        const minRound = await getRecentMinRound();
+
+        let query = indexer.searchForTransactions()
             .txType('pay')
-            .notePrefix(new TextEncoder().encode('{"type":"ATTENDANCE"'))
-            .limit(100)
-            .do();
+            .notePrefix(new TextEncoder().encode(sessionPrefix))
+            .limit(200);
+
+        if (minRound) {
+            query = query.minRound(minRound);
+        }
+
+        const response = await query.do();
 
         const records: AttendanceRecord[] = [];
 
@@ -136,6 +164,65 @@ export async function fetchAttendanceForSession(sessionId: string): Promise<Atte
         return records;
     } catch (error) {
         console.error('Error fetching attendance:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch all attendance sessions and basic counts.
+ */
+export async function fetchAttendanceSessionsSummary(): Promise<AttendanceSessionSummary[]> {
+    const indexer = getIndexerClient();
+    try {
+        const minRound = await getRecentMinRound();
+
+        let query = indexer.searchForTransactions()
+            .txType('pay')
+            .notePrefix(new TextEncoder().encode('{"type":"ATTENDANCE"'))
+            .limit(300);
+
+        if (minRound) {
+            query = query.minRound(minRound);
+        }
+
+        const response = await query.do();
+
+        const bySession = new Map<string, { txns: number; students: Set<string>; latest: number }>();
+
+        for (const txn of response.transactions) {
+            try {
+                if (!txn.note) continue;
+                const noteBuffer = Buffer.from(txn.note, 'base64');
+                const noteString = noteBuffer.toString('utf-8');
+                const noteData = JSON.parse(noteString);
+
+                if (noteData.type !== 'ATTENDANCE' || !noteData.sessionId) continue;
+
+                const current = bySession.get(noteData.sessionId) ?? { txns: 0, students: new Set<string>(), latest: 0 };
+                current.txns += 1;
+
+                const studentKey = (noteData.name || txn.sender || '').toString();
+                if (studentKey) current.students.add(studentKey);
+
+                const roundTime = (txn['round-time'] || 0) * 1000;
+                if (roundTime > current.latest) current.latest = roundTime;
+
+                bySession.set(noteData.sessionId, current);
+            } catch {
+                // Ignore malformed notes
+            }
+        }
+
+        return Array.from(bySession.entries())
+            .map(([sessionId, value]) => ({
+                sessionId,
+                totalTransactions: value.txns,
+                presentStudents: value.students.size,
+                latestTimestamp: new Date(value.latest || Date.now()).toISOString(),
+            }))
+            .sort((a, b) => new Date(b.latestTimestamp).getTime() - new Date(a.latestTimestamp).getTime());
+    } catch (error) {
+        console.error('Error fetching attendance sessions summary:', error);
         return [];
     }
 }
@@ -315,7 +402,7 @@ export function createVoteTxn(
 export function createHashStoreTxn(
     sender: string,
     hash: string,
-    noteObject: any,
+    noteObject: Record<string, unknown>,
     suggestedParams: algosdk.SuggestedParams
 ): algosdk.Transaction {
     // Use a simple payment transaction with note for storing hash
