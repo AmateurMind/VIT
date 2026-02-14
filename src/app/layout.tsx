@@ -4,9 +4,8 @@ import type { Metadata } from 'next';
 import { Orbitron, Rajdhani } from 'next/font/google';
 import { WalletProvider } from '@/context/WalletContext';
 import { cn } from '@/lib/utils';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import CampusAI from '@/components/CampusAI';
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import Navbar from '@/components/Navbar';
 
 const orbitron = Orbitron({
@@ -38,8 +37,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <WalletProvider>
           <Navbar />
           {children}
-          {/* ThemeToggle removed from here as it is now in Navbar (or optionally kept for mobile) */}
           <CampusAI />
+          <SpeedInsights />
         </WalletProvider>
       </body>
     </html>
