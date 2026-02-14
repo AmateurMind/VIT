@@ -461,12 +461,14 @@ export function createOptInTxn(
     appId: number,
     suggestedParams: algosdk.SuggestedParams
 ): algosdk.Transaction {
+    // efficient handling using the non-object constructor to avoid TS issues with 'from'/'sender'
+    // in v2, it's makeApplicationCallTxnFromObject
     return algosdk.makeApplicationCallTxnFromObject({
         from: sender,
         appIndex: appId,
         onComplete: algosdk.OnApplicationComplete.OptInOC,
         suggestedParams,
-    });
+    } as any);
 }
 
 /**
@@ -490,7 +492,7 @@ export function createVoteTxn(
         onComplete: algosdk.OnApplicationComplete.NoOpOC,
         appArgs,
         suggestedParams,
-    });
+    } as any);
 }
 
 /**
