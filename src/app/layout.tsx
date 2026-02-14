@@ -6,7 +6,7 @@ import { WalletProvider } from '@/context/WalletContext';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import CampusAI from '@/components/CampusAI';
-
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import Navbar from '@/components/Navbar';
 
 const orbitron = Orbitron({
