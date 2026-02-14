@@ -2,12 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileCheck, Wallet, ExternalLink, ShieldCheck, Upload, Search, Hash, CheckCircle, XCircle } from 'lucide-react';
+import { FileCheck, Wallet, ExternalLink, ShieldCheck, Upload, Search, Hash, CheckCircle, XCircle, History, Clock } from 'lucide-react';
 import {
     createHashStoreTxn,
     getSuggestedParams,
@@ -26,19 +24,20 @@ interface CertificateRecord {
     timestamp: string;
 }
 
+type Tab = 'store' | 'verify' | 'history';
+
 export default function CertificatePage() {
     const { address, isConnected, connect, peraWallet } = useWallet();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [activeTab, setActiveTab] = useState<Tab>('store');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [fileHash, setFileHash] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [status, setStatus] = useState<string>('');
     const [records, setRecords] = useState<CertificateRecord[]>([]);
-    const [verifyMode, setVerifyMode] = useState<boolean>(false);
     const [verifyResult, setVerifyResult] = useState<'match' | 'no-match' | null>(null);
-
     const [successTxId, setSuccessTxId] = useState<string | null>(null);
 
     // Fetch existing certificates when wallet connects
@@ -68,7 +67,7 @@ export default function CertificatePage() {
             const hash = await hashFile(file);
             setFileHash(hash);
             setStatus('');
-            if (verifyMode) {
+            if (activeTab === 'verify') {
                 const exists = records.some(r => r.hash === hash);
                 setVerifyResult(exists ? 'match' : 'no-match');
             }
@@ -153,250 +152,328 @@ export default function CertificatePage() {
 
     return (
         <div className="min-h-screen">
-            {/* Header */}
-
-
-            <main className="max-w-3xl mx-auto px-6 md:px-12 py-12">
+            <main className="max-w-4xl mx-auto px-6 md:px-12 py-12">
                 <motion.div variants={container} initial="hidden" animate="show">
                     {/* Page Title */}
                     <motion.div variants={item} className="text-center mb-10">
-                        <FileCheck className="w-10 h-10 text-primary mx-auto mb-4" />
-                        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-primary text-glow mb-2">
+                        <FileCheck className="w-12 h-12 text-primary mx-auto mb-4" />
+                        <h1 className="font-display text-4xl font-bold tracking-tight text-primary text-glow mb-2">
                             CERTIFICATES
                         </h1>
-                        <p className="text-sm text-muted-foreground">Store and verify certificate authenticity using blockchain hashes.</p>
+                        <p className="text-muted-foreground">Store, verify, and track your certificates on the blockchain.</p>
                     </motion.div>
 
-                    {/* Stored Records - moved to top */}
-                    {records.length > 0 && (
-                        <motion.div variants={item} initial="hidden" animate="show" className="mb-6">
-                            <Card className="bg-card/50 border-border backdrop-blur-sm">
-                                <CardHeader className="pb-3 border-b border-border/50">
-                                    <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2 text-primary">
-                                        <FileCheck className="w-4 h-4" /> Stored Certificates
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="pt-4 space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {records.map((record, index) => (
-                                        <div key={index} className="p-4 bg-background/50 border border-border/60 rounded-lg space-y-3 hover:border-primary/30 transition-colors">
-                                            <div className="flex justify-between items-start gap-3">
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <FileCheck className="w-4 h-4 text-emerald-500" />
-                                                        <strong className="text-sm font-display tracking-wide text-foreground">{record.fileName}</strong>
-                                                    </div>
-                                                    <p className="text-xs font-mono text-muted-foreground pl-6">
-                                                        {new Date(record.timestamp).toLocaleString()}
-                                                    </p>
-                                                </div>
-                                                <Button variant="outline" size="sm" className="h-7 text-[10px] font-display uppercase tracking-wider border-primary/20 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/40 shrink-0" asChild>
-                                                    <a href={getExplorerUrl(record.txId)} target="_blank" rel="noopener noreferrer">
-                                                        Explorer <ExternalLink className="w-3 h-3 ml-1" />
-                                                    </a>
-                                                </Button>
-                                            </div>
-
-                                            <div className="pl-6 pt-1 border-t border-border/30 mt-2">
-                                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1 font-mono uppercase tracking-widest opacity-70">
-                                                    <Hash className="w-3 h-3" /> SHA-256 Hash
-                                                </div>
-                                                <div className="bg-black/20 p-2 rounded border border-border/30 font-mono text-[10px] text-primary/80 break-all select-all hover:bg-black/30 transition-colors">
-                                                    {record.hash}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    )}
-
-                    {/* Mode Toggle */}
-                    <motion.div variants={item}>
-                        <Card className="bg-card border-border mb-5">
-                            <CardContent className="pt-6 flex justify-center gap-3">
-                                <Button
-                                    onClick={() => { setVerifyMode(false); setVerifyResult(null); }}
-                                    variant={!verifyMode ? "default" : "outline"}
-                                    className={`font-display uppercase tracking-wider text-xs ${!verifyMode ? 'bg-primary text-primary-foreground' : 'border-primary/40 text-primary'}`}
-                                >
-                                    <Upload className="w-3.5 h-3.5 mr-2" /> Store Certificate
-                                </Button>
-                                <Button
-                                    onClick={() => { setVerifyMode(true); setVerifyResult(null); }}
-                                    variant={verifyMode ? "default" : "outline"}
-                                    className={`font-display uppercase tracking-wider text-xs ${verifyMode ? 'bg-primary text-primary-foreground' : 'border-primary/40 text-primary'}`}
-                                >
-                                    <Search className="w-3.5 h-3.5 mr-2" /> Verify Certificate
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="font-display uppercase tracking-wider text-xs border-primary/40 text-primary"
-                                    asChild
-                                >
-                                    <Link href="/certificate/records">
-                                        <FileCheck className="w-3.5 h-3.5 mr-2" /> View History
-                                    </Link>
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-
-                    {/* Connect */}
-                    {!isConnected && !verifyMode && (
-                        <motion.div variants={item} initial="hidden" animate="show">
-                            <Card className="bg-card border-border mb-5">
-                                <CardContent className="pt-6 text-center">
-                                    <Wallet className="w-8 h-8 text-primary mx-auto mb-3" />
-                                    <h3 className="font-display text-sm uppercase tracking-wider mb-1">Connect Wallet</h3>
-                                    <p className="text-xs text-muted-foreground mb-4">Connect Pera Wallet to store certificates.</p>
-                                    <Button onClick={connect} className="w-full font-display uppercase tracking-wider text-xs bg-primary text-primary-foreground hover:bg-primary/90">
-                                        Connect Pera Wallet
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    )}
-
-                    {/* Alerts */}
-                    {error && (
-                        <motion.div variants={item} className="bg-destructive/10 border border-destructive/30 p-4 mb-5 text-sm text-destructive">
-                            ⚠️ {error}
-                        </motion.div>
-                    )}
-                    {status && (
-                        <motion.div variants={item} className="bg-primary/5 border border-primary/20 p-4 mb-5 text-sm text-primary font-mono">
-                            ⏳ {status}
-                        </motion.div>
-                    )}
-                    {successTxId && (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="bg-emerald-100 border-2 border-emerald-300 p-5 mb-5 rounded-md text-emerald-900 flex flex-col gap-3">
-                            <div className="flex items-center gap-2 font-bold text-base">
-                                <CheckCircle className="w-5 h-5" />
-                                <span>Certificate Hash Stored Successfully!</span>
-                            </div>
-                            <div className="pl-7 space-y-2">
-                                <a
-                                    href={getExplorerUrl(successTxId)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded bg-emerald-200 text-emerald-900 font-bold text-xs hover:bg-emerald-300 transition-colors"
-                                >
-                                    View Transaction on Explorer <ExternalLink className="w-3 h-3" />
-                                </a>
-                                <p className="text-[10px] text-emerald-800 break-all font-mono opacity-80 select-all">
-                                    {getExplorerUrl(successTxId)}
-                                </p>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* File Upload */}
-                    <motion.div variants={item}>
-                        <Card className="bg-card border-border mb-5">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
-                                    {verifyMode ? <Search className="w-4 h-4 text-primary" /> : <Upload className="w-4 h-4 text-primary" />}
-                                    {verifyMode ? 'Upload to Verify' : 'Upload to Store'}
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-xs text-muted-foreground mb-4">
-                                    {verifyMode
-                                        ? 'Upload a certificate to verify its authenticity against stored hashes.'
-                                        : 'Upload a certificate file to store its hash on the blockchain.'}
-                                </p>
-
-                                {/* File Upload Area */}
-                                <div
-                                    className={`border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${selectedFile ? 'border-primary/60 bg-primary/5' : 'border-border hover:border-primary/40'
+                    {/* Navigation Tabs */}
+                    <motion.div variants={item} className="flex justify-center mb-8">
+                        <div className="bg-card/50 backdrop-blur-sm p-1 rounded-xl border border-border inline-flex">
+                            {(['store', 'verify', 'history'] as const).map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => {
+                                        setActiveTab(tab);
+                                        setVerifyResult(null);
+                                        setError(null);
+                                        setStatus('');
+                                        setSelectedFile(null);
+                                        setFileHash(null);
+                                        if (fileInputRef.current) fileInputRef.current.value = '';
+                                    }}
+                                    className={`px-6 py-2.5 rounded-lg text-sm font-display font-medium uppercase tracking-wider transition-all duration-300 ${activeTab === tab
+                                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
                                         }`}
-                                    onClick={() => fileInputRef.current?.click()}
                                 >
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        onChange={handleFileSelect}
-                                        accept=".pdf,.png,.jpg,.jpeg"
-                                        className="hidden"
-                                    />
-                                    {selectedFile ? (
-                                        <>
-                                            <FileCheck className="w-8 h-8 text-primary mx-auto mb-2" />
-                                            <p className="text-sm font-semibold text-foreground">{selectedFile.name}</p>
-                                            <p className="text-[10px] font-mono text-muted-foreground mt-1">
-                                                {(selectedFile.size / 1024).toFixed(2)} KB
-                                            </p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">Click to select a certificate</p>
-                                            <p className="text-[10px] font-mono text-muted-foreground mt-1">PDF, PNG, JPG</p>
-                                        </>
-                                    )}
+                                    {tab === 'store' && <div className="flex items-center gap-2"><Upload className="w-4 h-4" /> Store</div>}
+                                    {tab === 'verify' && <div className="flex items-center gap-2"><Search className="w-4 h-4" /> Verify</div>}
+                                    {tab === 'history' && <div className="flex items-center gap-2"><History className="w-4 h-4" /> History</div>}
+                                </button>
+                            ))}
+                        </div>
+                    </motion.div>
+
+                    {/* Content Area */}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            {/* STORE Tab */}
+                            {activeTab === 'store' && (
+                                <div className="max-w-xl mx-auto">
+                                    <Card className="bg-card border-border mb-5">
+                                        <CardHeader className="pb-3 border-b border-border/50">
+                                            <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                                <Upload className="w-4 h-4 text-primary" /> Store Certificate
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="pt-6">
+                                            {!isConnected ? (
+                                                <div className="text-center py-6">
+                                                    <Wallet className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
+                                                    <p className="text-sm text-muted-foreground mb-4">Connect your wallet to store certificates.</p>
+                                                    <Button onClick={connect} className="font-display uppercase tracking-wider text-xs">
+                                                        Connect Pera Wallet
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p className="text-xs text-muted-foreground mb-4">
+                                                        Upload a certificate to permanently store its hash on the blockchain.
+                                                    </p>
+                                                    <div
+                                                        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-300 ${selectedFile
+                                                            ? 'border-primary/60 bg-primary/5'
+                                                            : 'border-border hover:border-primary/40 hover:bg-white/5'
+                                                            }`}
+                                                        onClick={() => fileInputRef.current?.click()}
+                                                    >
+                                                        <input
+                                                            ref={fileInputRef}
+                                                            type="file"
+                                                            onChange={handleFileSelect}
+                                                            accept=".pdf,.png,.jpg,.jpeg"
+                                                            className="hidden"
+                                                        />
+                                                        {selectedFile ? (
+                                                            <>
+                                                                <FileCheck className="w-10 h-10 text-primary mx-auto mb-3" />
+                                                                <p className="text-sm font-semibold text-foreground">{selectedFile.name}</p>
+                                                                <p className="text-[10px] font-mono text-muted-foreground mt-1">
+                                                                    {(selectedFile.size / 1024).toFixed(2)} KB
+                                                                </p>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Upload className="w-10 h-10 text-muted-foreground/60 mx-auto mb-3" />
+                                                                <p className="text-sm text-muted-foreground">Click to select file</p>
+                                                                <p className="text-[10px] font-mono text-muted-foreground mt-1">PDF, PNG, JPG</p>
+                                                            </>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Hash Display */}
+                                                    {fileHash && (
+                                                        <div className="mt-4">
+                                                            <div className="bg-background/50 rounded-lg p-3 border border-border/50">
+                                                                <p className="text-[10px] font-display uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                                                                    <Hash className="w-3 h-3" /> DNA (SHA-256)
+                                                                </p>
+                                                                <div className="font-mono text-[10px] text-primary break-all select-all">
+                                                                    {fileHash}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Store Button */}
+                                                    {fileHash && (
+                                                        <Button
+                                                            onClick={handleStoreCertificate}
+                                                            disabled={loading}
+                                                            className="w-full mt-6 font-display uppercase tracking-wider text-xs bg-primary text-primary-foreground hover:bg-primary/90 h-10"
+                                                        >
+                                                            {loading ? (
+                                                                <span className="flex items-center gap-2">
+                                                                    <span className="animate-spin">⏳</span> Processing...
+                                                                </span>
+                                                            ) : 'Store Hash on Blockchain'}
+                                                        </Button>
+                                                    )}
+
+                                                    {/* Status Messages */}
+                                                    {status && (
+                                                        <div className="mt-4 text-center">
+                                                            <p className="text-xs font-mono text-primary animate-pulse">{status}</p>
+                                                        </div>
+                                                    )}
+                                                    {error && (
+                                                        <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-xs text-destructive text-center">
+                                                            {error}
+                                                        </div>
+                                                    )}
+                                                    {successTxId && (
+                                                        <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex flex-col gap-2">
+                                                            <div className="flex items-center gap-2 text-emerald-500 font-bold text-sm">
+                                                                <CheckCircle className="w-4 h-4" /> Stored Successfully
+                                                            </div>
+                                                            <a href={getExplorerUrl(successTxId)} target="_blank" rel="noopener noreferrer" className="text-[10px] text-emerald-500/70 hover:text-emerald-500 underline decoration-dotted truncate">
+                                                                View on Explorer: {successTxId}
+                                                            </a>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </CardContent>
+                                    </Card>
                                 </div>
+                            )}
 
-                                {/* Hash Display */}
-                                {fileHash && (
-                                    <div className="mt-4">
-                                        <p className="text-xs font-display uppercase tracking-wider text-foreground mb-1 flex items-center gap-1">
-                                            <Hash className="w-3 h-3 text-primary" /> SHA-256 Hash
-                                        </p>
-                                        <div className="bg-secondary p-3 font-mono text-[10px] text-primary break-all border border-border">
-                                            {fileHash}
-                                        </div>
-                                    </div>
-                                )}
+                            {/* VERIFY Tab */}
+                            {activeTab === 'verify' && (
+                                <div className="max-w-xl mx-auto">
+                                    <Card className="bg-card border-border mb-5">
+                                        <CardHeader className="pb-3 border-b border-border/50">
+                                            <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                                <Search className="w-4 h-4 text-primary" /> Verify Certificate
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="pt-6">
+                                            <p className="text-xs text-muted-foreground mb-4">
+                                                Upload a document to check if its original hash exists on the blockchain.
+                                            </p>
+                                            <div
+                                                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all duration-300 ${selectedFile
+                                                    ? 'border-primary/60 bg-primary/5'
+                                                    : 'border-border hover:border-primary/40 hover:bg-white/5'
+                                                    }`}
+                                                onClick={() => fileInputRef.current?.click()}
+                                            >
+                                                <input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    onChange={handleFileSelect}
+                                                    accept=".pdf,.png,.jpg,.jpeg"
+                                                    className="hidden"
+                                                />
+                                                {selectedFile ? (
+                                                    <>
+                                                        <Search className="w-10 h-10 text-primary mx-auto mb-3" />
+                                                        <p className="text-sm font-semibold text-foreground">{selectedFile.name}</p>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Search className="w-10 h-10 text-muted-foreground/60 mx-auto mb-3" />
+                                                        <p className="text-sm text-muted-foreground">Select file to verify</p>
+                                                    </>
+                                                )}
+                                            </div>
 
-                                {/* Verify Result */}
-                                {verifyMode && verifyResult && (
-                                    <div className={`mt-4 p-4 flex items-center gap-3 ${verifyResult === 'match'
-                                        ? 'bg-emerald-100 border border-emerald-300 text-emerald-800'
-                                        : 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-400'
-                                        }`}>
-                                        {verifyResult === 'match' ? (
-                                            <><CheckCircle className="w-5 h-5 shrink-0" /> <span className="text-sm">Certificate hash matches! Authentic.</span></>
-                                        ) : (
-                                            <><XCircle className="w-5 h-5 shrink-0" /> <span className="text-sm">No matching hash found. May not be stored or altered.</span></>
+                                            {/* Verify Result */}
+                                            {verifyResult && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className={`mt-6 p-4 rounded-lg border flex items-start gap-3 ${verifyResult === 'match'
+                                                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
+                                                        : 'bg-destructive/10 border-destructive/30 text-destructive'
+                                                        }`}
+                                                >
+                                                    {verifyResult === 'match' ? (
+                                                        <>
+                                                            <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <h4 className="font-bold text-sm">Valid Certificate</h4>
+                                                                <p className="text-xs opacity-80 mt-1">This document's hash matches a record on the blockchain.</p>
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <XCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <h4 className="font-bold text-sm">No Match Found</h4>
+                                                                <p className="text-xs opacity-80 mt-1">We could not find a record of this file. It may be modified or not yet stored.</p>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </motion.div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            )}
+
+                            {/* HISTORY Tab */}
+                            {activeTab === 'history' && (
+                                <div className="max-w-2xl mx-auto">
+                                    <div className="space-y-4">
+                                        {!isConnected && (
+                                            <div className="text-center py-12 bg-card border border-border rounded-xl">
+                                                <Wallet className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                                                <h3 className="text-lg font-bold">Connect Wallet</h3>
+                                                <p className="text-sm text-muted-foreground mb-4">View your certificate history</p>
+                                                <Button onClick={connect} variant="outline">Connect Pera Wallet</Button>
+                                            </div>
                                         )}
+
+                                        {isConnected && records.length === 0 && (
+                                            <div className="text-center py-12 bg-card border border-border rounded-xl">
+                                                <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                                                <h3 className="text-lg font-bold">No Records</h3>
+                                                <p className="text-sm text-muted-foreground">You haven't stored any certificates yet.</p>
+                                            </div>
+                                        )}
+
+                                        {isConnected && records.map((record, index) => (
+                                            <motion.div
+                                                key={record.txId}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.05 }}
+                                                className="bg-card border border-border rounded-xl p-4 hover:border-primary/30 transition-all group"
+                                            >
+                                                <div className="flex justify-between items-start gap-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                                                            <FileCheck className="w-5 h-5 text-primary" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-sm text-foreground mb-1">{record.fileName}</h4>
+                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                <Clock className="w-3 h-3" />
+                                                                {new Date(record.timestamp).toLocaleString()}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <Button variant="ghost" size="sm" className="h-8 text-xs font-display uppercase tracking-wider text-primary" asChild>
+                                                        <a href={getExplorerUrl(record.txId)} target="_blank" rel="noopener noreferrer">
+                                                            Explorer <ExternalLink className="w-3 h-3 ml-1" />
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                                <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-2">
+                                                    <Hash className="w-3 h-3 text-muted-foreground" />
+                                                    <code className="text-[10px] font-mono text-muted-foreground truncate max-w-[300px] md:max-w-full group-hover:text-primary transition-colors">
+                                                        {record.hash}
+                                                    </code>
+                                                </div>
+                                            </motion.div>
+                                        ))}
                                     </div>
-                                )}
+                                </div>
+                            )}
 
-                                {/* Store Button */}
-                                {!verifyMode && isConnected && fileHash && (
-                                    <Button
-                                        onClick={handleStoreCertificate}
-                                        disabled={loading}
-                                        className="w-full mt-4 font-display uppercase tracking-wider text-xs bg-primary text-primary-foreground hover:bg-primary/90"
-                                    >
-                                        {loading ? 'Storing...' : 'Store Hash on Blockchain'}
-                                    </Button>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </motion.div>
+                            {/* How It Works - Only show on Store/Verify tabs */}
+                            {activeTab !== 'history' && (
+                                <div className="max-w-xl mx-auto mt-8">
+                                    <Card className="bg-card/50 border-border/50">
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                                <ShieldCheck className="w-4 h-4 text-primary" /> How It Works
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <ul className="space-y-3 text-xs text-muted-foreground">
+                                                <li className="flex items-start gap-2"><Hash className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Hash Generation</strong> — SHA-256 uniquely identifies the file</span></li>
+                                                <li className="flex items-start gap-2"><ShieldCheck className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Blockchain Storage</strong> — Hash stored on Algorand permanently</span></li>
+                                                <li className="flex items-start gap-2"><Search className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Instant Verify</strong> — Any modification changes the hash</span></li>
+                                            </ul>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            )}
 
+                        </motion.div>
+                    </AnimatePresence>
 
-
-                    {/* Info */}
-                    <motion.div variants={item}>
-                        <Card className="bg-card border-border">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
-                                    <ShieldCheck className="w-4 h-4 text-primary" /> How It Works
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <ul className="space-y-3 text-xs text-muted-foreground">
-                                    <li className="flex items-start gap-2"><Hash className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Hash Generation</strong> — SHA-256 uniquely identifies the file</span></li>
-                                    <li className="flex items-start gap-2"><ShieldCheck className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Blockchain Storage</strong> — Hash stored on Algorand permanently</span></li>
-                                    <li className="flex items-start gap-2"><Search className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Instant Verify</strong> — Any modification changes the hash</span></li>
-                                    <li className="flex items-start gap-2"><FileCheck className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /> <span><strong className="text-foreground">Public Proof</strong> — Anyone can verify via explorer</span></li>
-                                </ul>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
+                    {/* Footer Info */}
+                    <div className="mt-12 text-center">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-display">
+                            Secured by Algorand Blockchain
+                        </p>
+                    </div>
                 </motion.div>
             </main>
         </div>
