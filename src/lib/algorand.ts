@@ -516,7 +516,7 @@ export function createHashStoreTxn(
         amount: 0,
         note: new TextEncoder().encode(JSON.stringify(noteData)),
         suggestedParams,
-    });
+    } as any);
 }
 
 /**
