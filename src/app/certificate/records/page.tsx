@@ -69,17 +69,7 @@ export default function CertificateRecordsPage() {
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            {/* Header */}
-            <header className="flex justify-between items-center py-4 px-6 md:px-12 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-                <Link href="/certificate" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group">
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    <span className="font-display text-xs uppercase tracking-[0.2em]">Back</span>
-                </Link>
-                <div className="flex items-center gap-2">
-                    <FileCheck className="w-4 h-4 text-primary" />
-                    <span className="font-display text-sm uppercase tracking-[0.2em] text-primary font-bold">Certificate History</span>
-                </div>
-            </header>
+
 
             <main className="max-w-6xl mx-auto px-6 md:px-12 py-12">
                 <motion.div variants={container} initial="hidden" animate="show">

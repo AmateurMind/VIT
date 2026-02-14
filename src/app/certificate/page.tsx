@@ -129,18 +129,7 @@ export default function CertificatePage() {
     return (
         <div className="min-h-screen">
             {/* Header */}
-            <header className="flex justify-between items-center py-4 px-6 md:px-12 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-50">
-                <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="font-display text-xs uppercase tracking-[0.2em]">Back</span>
-                </Link>
-                <div className="flex items-center gap-4">
-                    <Link href="/certificate/records" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-                        <span className="font-display text-xs uppercase tracking-[0.2em]">History</span>
-                        <ArrowLeft className="w-4 h-4 rotate-180" />
-                    </Link>
-                </div>
-            </header>
+
 
             <main className="max-w-3xl mx-auto px-6 md:px-12 py-12">
                 <motion.div variants={container} initial="hidden" animate="show">
@@ -214,6 +203,15 @@ export default function CertificatePage() {
                                     className={`font-display uppercase tracking-wider text-xs ${verifyMode ? 'bg-primary text-primary-foreground' : 'border-primary/40 text-primary'}`}
                                 >
                                     <Search className="w-3.5 h-3.5 mr-2" /> Verify Certificate
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="font-display uppercase tracking-wider text-xs border-primary/40 text-primary"
+                                    asChild
+                                >
+                                    <Link href="/certificate/records">
+                                        <FileCheck className="w-3.5 h-3.5 mr-2" /> View History
+                                    </Link>
                                 </Button>
                             </CardContent>
                         </Card>

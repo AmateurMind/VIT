@@ -195,15 +195,6 @@ export default function VotePage() {
 
     return (
         <div className="min-h-screen">
-            {/* Header */}
-            <header className="flex justify-between items-center py-4 px-6 md:px-12 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-50">
-                <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="font-display text-xs uppercase tracking-[0.2em]">Back</span>
-                </Link>
-                <span className="font-display text-sm uppercase tracking-[0.2em] text-primary">Voting Module</span>
-                <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">MOD.01</Badge>
-            </header>
 
             <main className="max-w-3xl mx-auto px-6 md:px-12 py-12">
                 <motion.div variants={container} initial="hidden" animate="show">
@@ -521,6 +512,6 @@ export default function VotePage() {
                     </motion.div>
                 </motion.div>
             </main>
-        </div>
+        </div >
     );
 }

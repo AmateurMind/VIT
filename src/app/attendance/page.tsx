@@ -209,19 +209,8 @@ export default function AttendancePage() {
         if (!sessionId) return;
         router.push(`/attendance/list?sessionId=${encodeURIComponent(sessionId)}`);
     };
-
     return (
         <div className="min-h-screen">
-            {/* Header */}
-            <header className="flex justify-between items-center py-4 px-6 md:px-12 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-50">
-                <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="font-display text-xs uppercase tracking-[0.2em]">Back</span>
-                </Link>
-                <span className="font-display text-sm uppercase tracking-[0.2em] text-primary">Attendance Module</span>
-                <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">MOD.02</Badge>
-            </header>
-
             <main className="max-w-3xl mx-auto px-6 md:px-12 py-12">
                 <motion.div variants={container} initial="hidden" animate="show">
                     {/* Page Title */}
@@ -231,183 +220,195 @@ export default function AttendancePage() {
                             SMART ATTENDANCE
                         </h1>
                         <p className="text-sm text-muted-foreground">Geo-Verified. Tamper-proof. Real-time.</p>
-                    </motion.div>
+                    </motion.div >
 
                     {/* Connect */}
-                    {!isConnected && (
-                        <motion.div variants={item}>
-                            <Card className="bg-card border-border mb-5">
-                                <CardContent className="pt-6 text-center">
-                                    <Wallet className="w-8 h-8 text-primary mx-auto mb-3" />
-                                    <h3 className="font-display text-sm uppercase tracking-wider mb-1">Connect Wallet</h3>
-                                    <p className="text-xs text-muted-foreground mb-4">Connect Pera Wallet to mark attendance.</p>
-                                    <Button onClick={connect} className="w-full font-display uppercase tracking-wider text-xs bg-primary text-primary-foreground hover:bg-primary/90">
-                                        Connect Pera Wallet
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    )}
+                    {
+                        !isConnected && (
+                            <motion.div variants={item}>
+                                <Card className="bg-card border-border mb-5">
+                                    <CardContent className="pt-6 text-center">
+                                        <Wallet className="w-8 h-8 text-primary mx-auto mb-3" />
+                                        <h3 className="font-display text-sm uppercase tracking-wider mb-1">Connect Wallet</h3>
+                                        <p className="text-xs text-muted-foreground mb-4">Connect Pera Wallet to mark attendance.</p>
+                                        <Button onClick={connect} className="w-full font-display uppercase tracking-wider text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                                            Connect Pera Wallet
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        )
+                    }
 
                     {/* Alerts */}
-                    {error && (
-                        <motion.div variants={item} className="bg-destructive/10 border border-destructive/30 p-4 mb-5 text-sm text-destructive">
-                            ⚠️ {error}
-                        </motion.div>
-                    )}
-                    {status && (
-                        <motion.div variants={item} className="bg-primary/5 border border-primary/20 p-4 mb-5 text-sm text-primary font-mono cursor-wait">
-                            ⏳ {status}
-                        </motion.div>
-                    )}
-                    {successTxId && (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="bg-emerald-100 border-2 border-emerald-300 p-5 mb-5 rounded-md text-emerald-900 flex flex-col gap-3">
-                            <div className="flex items-center gap-2 font-bold text-base">
-                                <CheckCircle className="w-5 h-5" />
-                                <span>Attendance Marked!</span>
-                            </div>
-                            <div className="pl-7 space-y-2">
-                                <a
-                                    href={getExplorerUrl(successTxId)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded bg-emerald-200 text-emerald-900 font-bold text-xs hover:bg-emerald-300 transition-colors"
-                                >
-                                    View Proof on Explorer <ExternalLink className="w-3 h-3" />
-                                </a>
-                            </div>
-                        </motion.div>
-                    )}
+                    {
+                        error && (
+                            <motion.div variants={item} className="bg-destructive/10 border border-destructive/30 p-4 mb-5 text-sm text-destructive">
+                                ⚠️ {error}
+                            </motion.div>
+                        )
+                    }
+                    {
+                        status && (
+                            <motion.div variants={item} className="bg-primary/5 border border-primary/20 p-4 mb-5 text-sm text-primary font-mono cursor-wait">
+                                ⏳ {status}
+                            </motion.div>
+                        )
+                    }
+                    {
+                        successTxId && (
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="bg-emerald-100 border-2 border-emerald-300 p-5 mb-5 rounded-md text-emerald-900 flex flex-col gap-3">
+                                <div className="flex items-center gap-2 font-bold text-base">
+                                    <CheckCircle className="w-5 h-5" />
+                                    <span>Attendance Marked!</span>
+                                </div>
+                                <div className="pl-7 space-y-2">
+                                    <a
+                                        href={getExplorerUrl(successTxId)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 px-4 py-2 rounded bg-emerald-200 text-emerald-900 font-bold text-xs hover:bg-emerald-300 transition-colors"
+                                    >
+                                        View Proof on Explorer <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                </div>
+                            </motion.div>
+                        )
+                    }
 
                     {/* Mark Attendance */}
-                    {isConnected && (
-                        <motion.div variants={item}>
-                            <Card className="bg-card border-border mb-5">
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
-                                        <Fingerprint className="w-4 h-4 text-primary" /> Mark Attendance
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-xs text-muted-foreground mb-4">
-                                        Please ensure you are currently in the classroom. Location access is required.
-                                    </p>
+                    {
+                        isConnected && (
+                            <motion.div variants={item}>
+                                <Card className="bg-card border-border mb-5">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                            <Fingerprint className="w-4 h-4 text-primary" /> Mark Attendance
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-xs text-muted-foreground mb-4">
+                                            Please ensure you are currently in the classroom. Location access is required.
+                                        </p>
 
-                                    <div className="flex gap-3 mb-4">
-                                        <input
-                                            type="text"
-                                            value={sessionId}
-                                            onChange={(e) => setSessionId(e.target.value)}
-                                            placeholder="Session ID (Ask Teacher)"
-                                            className="flex-1 bg-secondary border border-border px-3 py-2 text-sm font-mono text-foreground focus:outline-none focus:border-primary placeholder:text-muted-foreground/50"
-                                        />
-                                        {isTeacher && (
-                                            <Button variant="outline" size="sm" onClick={generateSessionId} className="font-display uppercase tracking-wider text-xs border-primary/40 text-primary">
-                                                New Session
+                                        <div className="flex gap-3 mb-4">
+                                            <input
+                                                type="text"
+                                                value={sessionId}
+                                                onChange={(e) => setSessionId(e.target.value)}
+                                                placeholder="Session ID (Ask Teacher)"
+                                                className="flex-1 bg-secondary border border-border px-3 py-2 text-sm font-mono text-foreground focus:outline-none focus:border-primary placeholder:text-muted-foreground/50"
+                                            />
+                                            {isTeacher && (
+                                                <Button variant="outline" size="sm" onClick={generateSessionId} className="font-display uppercase tracking-wider text-xs border-primary/40 text-primary">
+                                                    New Session
+                                                </Button>
+                                            )}
+                                            <Button variant="ghost" size="sm" onClick={goToAttendanceList} disabled={!sessionId} className="font-display uppercase tracking-wider text-xs">
+                                                Fetch List
                                             </Button>
-                                        )}
-                                        <Button variant="ghost" size="sm" onClick={goToAttendanceList} disabled={!sessionId} className="font-display uppercase tracking-wider text-xs">
-                                            Fetch List
-                                        </Button>
-                                    </div>
-
-                                    <div className="mb-4">
-                                        <input
-                                            type="text"
-                                            value={studentName}
-                                            onChange={(e) => setStudentName(e.target.value)}
-                                            placeholder="Enter Your Full Name"
-                                            className="w-full bg-secondary border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary placeholder:text-muted-foreground/50"
-                                        />
-                                    </div>
-
-                                    {sessionId && (
-                                        <div className="bg-primary/5 border border-primary/20 p-3 mb-4 text-xs font-mono text-primary flex justify-between items-center rounded-sm">
-                                            <span>Session: <strong>{sessionId}</strong></span>
-                                            {sessionLocation && <span className="bg-green-500/10 text-green-600 px-2 py-0.5 rounded text-[10px] border border-green-500/20">📍 Location Active</span>}
                                         </div>
-                                    )}
 
-                                    <Button
-                                        onClick={handleMarkAttendance}
-                                        disabled={loading || !sessionId || !studentName}
-                                        className="w-full font-display uppercase tracking-wider text-xs bg-primary text-primary-foreground hover:bg-primary/90"
-                                    >
-                                        {loading ? 'Verifying Location & Signing...' : 'Mark Present (with Geo-Tag)'}
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    )}
+                                        <div className="mb-4">
+                                            <input
+                                                type="text"
+                                                value={studentName}
+                                                onChange={(e) => setStudentName(e.target.value)}
+                                                placeholder="Enter Your Full Name"
+                                                className="w-full bg-secondary border border-border px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary placeholder:text-muted-foreground/50"
+                                            />
+                                        </div>
+
+                                        {sessionId && (
+                                            <div className="bg-primary/5 border border-primary/20 p-3 mb-4 text-xs font-mono text-primary flex justify-between items-center rounded-sm">
+                                                <span>Session: <strong>{sessionId}</strong></span>
+                                                {sessionLocation && <span className="bg-green-500/10 text-green-600 px-2 py-0.5 rounded text-[10px] border border-green-500/20">📍 Location Active</span>}
+                                            </div>
+                                        )}
+
+                                        <Button
+                                            onClick={handleMarkAttendance}
+                                            disabled={loading || !sessionId || !studentName}
+                                            className="w-full font-display uppercase tracking-wider text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                                        >
+                                            {loading ? 'Verifying Location & Signing...' : 'Mark Present (with Geo-Tag)'}
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        )
+                    }
 
                     {/* Live Attendance List */}
-                    {sessionId && (
-                        <motion.div variants={item}>
-                            <Card className="bg-card border-border mb-5">
-                                <CardHeader className="pb-3 border-b border-border/50">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
-                                            <Activity className="w-4 h-4 text-green-500 animate-pulse" /> Live Attendance
-                                        </CardTitle>
-                                        <Badge variant="outline" className="text-[10px] font-mono border-border text-foreground">
-                                            {liveList.length} Txns
-                                        </Badge>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="pt-0 max-h-80 overflow-y-auto">
-                                    {liveList.length === 0 ? (
-                                        <div className="py-8 text-center text-xs text-muted-foreground">
-                                            No attendance records found for this session yet.
-                                            <br />Click "Fetch List" to refresh.
+                    {
+                        sessionId && (
+                            <motion.div variants={item}>
+                                <Card className="bg-card border-border mb-5">
+                                    <CardHeader className="pb-3 border-b border-border/50">
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                                <Activity className="w-4 h-4 text-green-500 animate-pulse" /> Live Attendance
+                                            </CardTitle>
+                                            <Badge variant="outline" className="text-[10px] font-mono border-border text-foreground">
+                                                {liveList.length} Txns
+                                            </Badge>
                                         </div>
-                                    ) : (
-                                        <div className="divide-y divide-border/30">
-                                            {liveList.map((record, i) => (
-                                                <div key={i} className="py-3 flex justify-between items-center group hover:bg-white/5 px-2 -mx-2 rounded transition-colors">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-semibold text-foreground flex items-center gap-2">
-                                                            {record.studentName}
-                                                            {record.sender === address && <span className="text-[9px] bg-primary/20 text-primary px-1 rounded">YOU</span>}
-                                                        </span>
-                                                        <span className="text-[10px] font-mono text-muted-foreground">{record.sender.slice(0, 8)}...{record.sender.slice(-4)}</span>
-                                                        <a
-                                                            href={getExplorerUrl(record.txId)}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-[10px] font-mono text-primary hover:underline mt-1"
-                                                        >
-                                                            Tx: {record.txId.slice(0, 10)}...{record.txId.slice(-6)}
-                                                        </a>
-                                                    </div>
-                                                    <div className="flex flex-col items-end gap-1">
-                                                        <span className="text-[10px] text-muted-foreground">{new Date(record.timestamp).toLocaleTimeString()}</span>
-
-                                                        {record.distance !== undefined && (
-                                                            record.distance < 100 ? (
-                                                                <span className="text-[9px] bg-green-500/10 text-green-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide border border-green-500/20">
-                                                                    🟢 In Class ({Math.round(record.distance)}m)
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-[9px] bg-red-500/10 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide border border-red-500/20">
-                                                                    🔴 Remote ({Math.round(record.distance / 1000)}km)
-                                                                </span>
-                                                            )
-                                                        )}
-                                                        {/* Fallback if no session location set but we have user records */}
-                                                        {!sessionLocation && record.location && (
-                                                            <span className="text-[9px] bg-blue-500/10 text-blue-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide border border-blue-500/20">
-                                                                📍 Geo-Tagged
+                                    </CardHeader>
+                                    <CardContent className="pt-0 max-h-80 overflow-y-auto">
+                                        {liveList.length === 0 ? (
+                                            <div className="py-8 text-center text-xs text-muted-foreground">
+                                                No attendance records found for this session yet.
+                                                <br />Click "Fetch List" to refresh.
+                                            </div>
+                                        ) : (
+                                            <div className="divide-y divide-border/30">
+                                                {liveList.map((record, i) => (
+                                                    <div key={i} className="py-3 flex justify-between items-center group hover:bg-white/5 px-2 -mx-2 rounded transition-colors">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                                                {record.studentName}
+                                                                {record.sender === address && <span className="text-[9px] bg-primary/20 text-primary px-1 rounded">YOU</span>}
                                                             </span>
-                                                        )}
+                                                            <span className="text-[10px] font-mono text-muted-foreground">{record.sender.slice(0, 8)}...{record.sender.slice(-4)}</span>
+                                                            <a
+                                                                href={getExplorerUrl(record.txId)}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-[10px] font-mono text-primary hover:underline mt-1"
+                                                            >
+                                                                Tx: {record.txId.slice(0, 10)}...{record.txId.slice(-6)}
+                                                            </a>
+                                                        </div>
+                                                        <div className="flex flex-col items-end gap-1">
+                                                            <span className="text-[10px] text-muted-foreground">{new Date(record.timestamp).toLocaleTimeString()}</span>
+
+                                                            {record.distance !== undefined && (
+                                                                record.distance < 100 ? (
+                                                                    <span className="text-[9px] bg-green-500/10 text-green-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide border border-green-500/20">
+                                                                        🟢 In Class ({Math.round(record.distance)}m)
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-[9px] bg-red-500/10 text-red-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide border border-red-500/20">
+                                                                        🔴 Remote ({Math.round(record.distance / 1000)}km)
+                                                                    </span>
+                                                                )
+                                                            )}
+                                                            {/* Fallback if no session location set but we have user records */}
+                                                            {!sessionLocation && record.location && (
+                                                                <span className="text-[9px] bg-blue-500/10 text-blue-600 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide border border-blue-500/20">
+                                                                    📍 Geo-Tagged
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    )}
+                                                ))}
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        )
+                    }
 
                     {/* How It Works */}
                     <motion.div variants={item}>
@@ -426,8 +427,8 @@ export default function AttendancePage() {
                             </CardContent>
                         </Card>
                     </motion.div>
-                </motion.div>
-            </main>
-        </div>
+                </motion.div >
+            </main >
+        </div >
     );
 }

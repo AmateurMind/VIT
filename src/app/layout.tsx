@@ -5,6 +5,9 @@ import { Orbitron, Rajdhani } from 'next/font/google';
 import { WalletProvider } from '@/context/WalletContext';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import CampusAI from '@/components/CampusAI';
+
+import Navbar from '@/components/Navbar';
 
 const orbitron = Orbitron({
   subsets: ['latin'],
@@ -33,8 +36,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         rajdhani.variable
       )}>
         <WalletProvider>
+          <Navbar />
           {children}
-          <ThemeToggle />
+          {/* ThemeToggle removed from here as it is now in Navbar (or optionally kept for mobile) */}
+          <CampusAI />
         </WalletProvider>
       </body>
     </html>

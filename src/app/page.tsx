@@ -30,48 +30,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen scanlines">
-      {/* === HEADER / NAV === */}
-      <header className="flex justify-between items-center py-4 px-6 md:px-12 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 border-2 border-primary flex items-center justify-center">
-            <ShieldCheck className="w-5 h-5 text-primary" />
-          </div>
-          <span className="font-display text-lg tracking-[0.2em] text-primary font-bold uppercase">
-            Strotas
-          </span>
-        </div>
-
-        <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground font-medium uppercase tracking-wider">
-          <Link href="/vote" className="hover:text-primary transition-colors">Vote</Link>
-          <Link href="/attendance" className="hover:text-primary transition-colors">Attend</Link>
-          <Link href="/certificate" className="hover:text-primary transition-colors">Certs</Link>
-        </nav>
-
-        <div>
-          {isConnected ? (
-            <div className="flex items-center gap-3 border border-primary/30 px-4 py-1.5">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-xs font-mono text-primary">
-                {address?.slice(0, 6)}...{address?.slice(-4)}
-              </span>
-              <Button onClick={disconnect} variant="destructive" size="sm" className="h-7 px-3 text-xs font-display uppercase tracking-wider">
-                DC
-              </Button>
-            </div>
-          ) : (
-            <Button
-              onClick={connect}
-              disabled={isConnecting}
-              size="sm"
-              className="font-display uppercase tracking-wider text-xs border-2 border-primary bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-5"
-            >
-              {isConnecting ? '...' : 'Connect'}
-              <Wallet className="w-3.5 h-3.5 ml-2" />
-            </Button>
-          )}
-        </div>
-      </header>
-
       <main className="max-w-6xl mx-auto px-6 md:px-12">
         <motion.div
           variants={container}
@@ -162,10 +120,10 @@ export default function HomePage() {
               <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10 pointer-events-none" />
             </div>
 
-          </motion.section>
+          </motion.section >
 
           {/* === MODULES / FEATURE CARDS === */}
-          <motion.section variants={item} className="pb-20">
+          < motion.section variants={item} className="pb-20" >
             <div className="flex items-center gap-3 mb-8">
               <div className="h-px flex-1 bg-border" />
               <span className="font-display text-xs uppercase tracking-[0.3em] text-primary">Modules</span>
@@ -248,10 +206,10 @@ export default function HomePage() {
                 </Card>
               </Link>
             </div>
-          </motion.section>
+          </motion.section >
 
           {/* === TECH STACK === */}
-          <motion.section variants={item} className="pb-20">
+          < motion.section variants={item} className="pb-20" >
             <div className="flex items-center gap-3 mb-8">
               <div className="h-px flex-1 bg-border" />
               <span className="font-display text-xs uppercase tracking-[0.3em] text-primary">Powering The System</span>
@@ -303,10 +261,10 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-          </motion.section>
+          </motion.section >
 
           {/* === HOW IT WORKS === */}
-          <motion.section variants={item} className="pb-20">
+          < motion.section variants={item} className="pb-20" >
             <div className="flex items-center gap-3 mb-8">
               <div className="h-px flex-1 bg-border" />
               <span className="font-display text-xs uppercase tracking-[0.3em] text-primary">Protocol</span>
@@ -328,10 +286,10 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-          </motion.section>
+          </motion.section >
 
           {/* === STATS === */}
-          <motion.section variants={item} className="pb-20">
+          < motion.section variants={item} className="pb-20" >
             <div className="border border-primary/30 p-8 relative corner-bracket">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                 <div>
@@ -352,14 +310,14 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-          </motion.section>
+          </motion.section >
 
           {/* === FOOTER === */}
-          <footer className="border-t border-border py-8 text-center">
+          < footer className="border-t border-border py-8 text-center" >
             <p className="text-xs font-mono text-muted-foreground">
               © STROTAS 2026 — Built on <span className="text-primary">Algorand</span> — All records are immutable
             </p>
-          </footer>
+          </footer >
         </motion.div>
       </main>
     </div>
