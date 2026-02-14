@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { Orbitron, Rajdhani } from 'next/font/google';
 import { WalletProvider } from '@/context/WalletContext';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const orbitron = Orbitron({
   subsets: ['latin'],
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body className={cn(
         "min-h-screen bg-background font-sans antialiased",
         orbitron.variable,
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       )}>
         <WalletProvider>
           {children}
+          <ThemeToggle />
         </WalletProvider>
       </body>
     </html>

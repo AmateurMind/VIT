@@ -261,7 +261,7 @@ export default function HomePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
               {/* Next.js */}
               <div className="flex flex-col items-center gap-3 p-4 border border-transparent hover:border-primary/20 transition-colors rounded-lg group">
-                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-foreground group-hover:text-primary transition-colors">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-foreground group-hover:text-primary transition-colors">
                   <Zap className="w-6 h-6" />
                 </div>
                 <div>
@@ -272,7 +272,7 @@ export default function HomePage() {
 
               {/* Algorand */}
               <div className="flex flex-col items-center gap-3 p-4 border border-transparent hover:border-primary/20 transition-colors rounded-lg group">
-                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-foreground group-hover:text-primary transition-colors">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-foreground group-hover:text-primary transition-colors">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <div>
@@ -283,7 +283,7 @@ export default function HomePage() {
 
               {/* Tailwind */}
               <div className="flex flex-col items-center gap-3 p-4 border border-transparent hover:border-primary/20 transition-colors rounded-lg group">
-                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-foreground group-hover:text-primary transition-colors">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-foreground group-hover:text-primary transition-colors">
                   <Wind className="w-6 h-6" />
                 </div>
                 <div>
@@ -294,7 +294,7 @@ export default function HomePage() {
 
               {/* Three.js */}
               <div className="flex flex-col items-center gap-3 p-4 border border-transparent hover:border-primary/20 transition-colors rounded-lg group">
-                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-foreground group-hover:text-primary transition-colors">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-foreground group-hover:text-primary transition-colors">
                   <Box className="w-6 h-6" />
                 </div>
                 <div>

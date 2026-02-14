@@ -170,7 +170,7 @@ export default function CertificatePage() {
 
                     {/* Alerts */}
                     {error && (
-                        <motion.div variants={item} className="bg-destructive/10 border border-destructive/30 p-4 mb-5 text-sm text-red-400">
+                        <motion.div variants={item} className="bg-destructive/10 border border-destructive/30 p-4 mb-5 text-sm text-destructive">
                             ⚠️ {error}
                         </motion.div>
                     )}
@@ -180,7 +180,7 @@ export default function CertificatePage() {
                         </motion.div>
                     )}
                     {successTxId && (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="bg-green-600 border-2 border-green-400 p-5 mb-5 rounded-md text-white flex flex-col gap-3">
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="bg-emerald-100 border-2 border-emerald-300 p-5 mb-5 rounded-md text-emerald-900 flex flex-col gap-3">
                             <div className="flex items-center gap-2 font-bold text-base">
                                 <CheckCircle className="w-5 h-5" />
                                 <span>Certificate Hash Stored Successfully!</span>
@@ -190,11 +190,11 @@ export default function CertificatePage() {
                                     href={getExplorerUrl(successTxId)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded bg-white text-green-800 font-bold text-xs hover:bg-green-100 transition-colors"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded bg-emerald-200 text-emerald-900 font-bold text-xs hover:bg-emerald-300 transition-colors"
                                 >
                                     View Transaction on Explorer <ExternalLink className="w-3 h-3" />
                                 </a>
-                                <p className="text-xs text-green-200 break-all font-mono">
+                                <p className="text-xs text-emerald-800 break-all font-mono">
                                     {getExplorerUrl(successTxId)}
                                 </p>
                             </div>
@@ -262,7 +262,7 @@ export default function CertificatePage() {
                                 {/* Verify Result */}
                                 {verifyMode && verifyResult && (
                                     <div className={`mt-4 p-4 flex items-center gap-3 ${verifyResult === 'match'
-                                        ? 'bg-green-500/10 border border-green-500/30 text-green-400'
+                                        ? 'bg-emerald-100 border border-emerald-300 text-emerald-800'
                                         : 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-400'
                                         }`}>
                                         {verifyResult === 'match' ? (

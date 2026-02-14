@@ -107,9 +107,15 @@ export default function VotePage() {
             setUserOptedIn(true);
             setStatus('Opted in successfully.');
             await fetchState();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Opt-in error:', err);
-            setError('Failed to opt-in. Please try again.');
+            if (err?.data?.type === 'CONNECT_MODAL_CLOSED' || err?.message?.includes('4100')) {
+                setError('Transaction cancelled. Please check your Pera Wallet app for pending requests.');
+            } else if (err?.message?.includes('pending')) {
+                setError('A transaction is already pending. Please check Pera Wallet.');
+            } else {
+                setError('Failed to opt-in. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -141,9 +147,15 @@ export default function VotePage() {
             setUserVoted(true);
             setStatus('Vote recorded on blockchain!');
             await fetchState();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Voting error:', err);
-            setError('Failed to cast vote. Please try again.');
+            if (err?.data?.type === 'CONNECT_MODAL_CLOSED' || err?.message?.includes('4100')) {
+                setError('Transaction cancelled. Please check your Pera Wallet app for pending requests.');
+            } else if (err?.message?.includes('pending')) {
+                setError('A transaction is already pending. Please check Pera Wallet.');
+            } else {
+                setError('Failed to cast vote. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -263,7 +275,7 @@ export default function VotePage() {
                                         <h3 className="font-display text-sm uppercase tracking-wider flex items-center gap-2">
                                             <Rocket className="w-4 h-4 text-primary" /> Guest Identity
                                         </h3>
-                                        <Badge variant="outline" className="text-[10px] border-green-500/50 text-green-400">Active</Badge>
+                                        <Badge variant="outline" className="text-[10px] border-emerald-600/40 text-emerald-700">Active</Badge>
                                     </div>
                                     <p className="text-xs text-muted-foreground mb-2">Temporary wallet for demo purposes.</p>
                                     <div className="bg-secondary p-3 font-mono text-[11px] text-primary break-all mb-3 border border-border">{address}</div>
@@ -281,7 +293,7 @@ export default function VotePage() {
 
                     {/* Alerts */}
                     {error && (
-                        <motion.div variants={item} className="bg-destructive/10 border border-destructive/30 p-4 mb-5 text-sm text-red-400">
+                        <motion.div variants={item} className="bg-destructive/10 border border-destructive/30 p-4 mb-5 text-sm text-destructive">
                             ⚠️ {error}
                         </motion.div>
                     )}
@@ -291,7 +303,7 @@ export default function VotePage() {
                         </motion.div>
                     )}
                     {txId && (
-                        <motion.div variants={item} className="bg-green-500/10 border border-green-500/30 p-4 mb-5 text-sm text-green-400">
+                        <motion.div variants={item} className="bg-emerald-100 border border-emerald-300 p-4 mb-5 text-sm text-emerald-800">
                             ✅ Transaction confirmed!{' '}
                             <a href={getExplorerUrl(txId)} target="_blank" rel="noopener noreferrer" className="underline font-semibold inline-flex items-center gap-1">
                                 View on Explorer <ExternalLink className="w-3 h-3" />
@@ -361,8 +373,8 @@ export default function VotePage() {
                                         <CardContent className="pt-6">
                                             {userVoted ? (
                                                 <div className="text-center py-4">
-                                                    <ShieldCheck className="w-10 h-10 text-green-400 mx-auto mb-3" />
-                                                    <h3 className="font-display text-sm uppercase tracking-wider text-green-400 mb-1">Vote Recorded</h3>
+                                                    <ShieldCheck className="w-10 h-10 text-emerald-700 mx-auto mb-3" />
+                                                    <h3 className="font-display text-sm uppercase tracking-wider text-emerald-700 mb-1">Vote Recorded</h3>
                                                     <p className="text-xs text-muted-foreground">Permanently stored on Algorand.</p>
                                                 </div>
                                             ) : !userOptedIn ? (

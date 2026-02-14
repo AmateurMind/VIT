@@ -54,9 +54,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             }
         }).catch(console.error);
 
-        return () => {
-            wallet.disconnect();
-        };
     }, []);
 
     const handleDisconnect = useCallback(() => {
