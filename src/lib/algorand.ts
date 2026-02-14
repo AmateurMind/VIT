@@ -21,6 +21,63 @@ export function getAlgodClient(): algosdk.Algodv2 {
 }
 
 /**
+ * Get Algorand Indexer client for TestNet
+ */
+export function getIndexerClient(): algosdk.Indexer {
+    return new algosdk.Indexer('', 'https://testnet-idx.algonode.cloud', '443');
+}
+
+export interface CertificateRecord {
+    fileName: string;
+    hash: string;
+    txId: string;
+    timestamp: string;
+    sender: string;
+}
+
+/**
+ * Fetch stored certificates from the blockchain history
+ */
+export async function fetchCertificateTransactions(address: string): Promise<CertificateRecord[]> {
+    const indexer = getIndexerClient();
+    try {
+        const response = await indexer.searchForTransactions()
+            .address(address)
+            .txType('pay') // We used payment txns for storage
+            .notePrefix(new TextEncoder().encode('{"type":"CERTIFICATE"')) // Filter by our specific note prefix
+            .do();
+
+        const records: CertificateRecord[] = [];
+
+        for (const txn of response.transactions) {
+            try {
+                if (txn.note) {
+                    const noteBuffer = Buffer.from(txn.note, 'base64');
+                    const noteString = noteBuffer.toString('utf-8');
+                    const noteData = JSON.parse(noteString);
+
+                    if (noteData.type === 'CERTIFICATE' && noteData.hash) {
+                        records.push({
+                            fileName: 'Certificate', // Filename isn't stored on-chain to save space/privacy, handled by UI context or generic
+                            hash: noteData.hash,
+                            txId: txn.id,
+                            timestamp: new Date(txn['round-time'] * 1000).toISOString(),
+                            sender: txn.sender
+                        });
+                    }
+                }
+            } catch (e) {
+                // Skip malformed notes
+            }
+        }
+        return records;
+    } catch (e) {
+        console.error('Error fetching certificates:', e);
+        return [];
+    }
+}
+
+/**
  * Get suggested transaction parameters
  */
 export async function getSuggestedParams(): Promise<algosdk.SuggestedParams> {
@@ -106,6 +163,36 @@ export async function hasOptedIn(appId: number, address: string): Promise<boolea
     } catch {
         return false;
     }
+}
+
+/**
+ * Read both opt-in and vote status without hitting the accountApplicationInformation 404 path.
+ */
+export async function getVotingParticipationStatus(
+    appId: number,
+    address: string
+): Promise<{ optedIn: boolean; hasVoted: boolean }> {
+    const client = getAlgodClient();
+    const accountInfo = await client.accountInformation(address).do();
+    const localApps = accountInfo['apps-local-state'] || [];
+    const appLocal = localApps.find((app: { id: number }) => app.id === appId);
+
+    if (!appLocal) {
+        return { optedIn: false, hasVoted: false };
+    }
+
+    const keyValues = appLocal['key-value'] || [];
+    let voted = false;
+
+    for (const state of keyValues) {
+        const key = Buffer.from(state.key, 'base64').toString();
+        if (key === 'has_voted' && state.value?.uint === 1) {
+            voted = true;
+            break;
+        }
+    }
+
+    return { optedIn: true, hasVoted: voted };
 }
 
 /**

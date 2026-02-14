@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -14,6 +14,7 @@ import {
     getAlgodClient,
     getExplorerUrl,
     hashFile,
+    fetchCertificateTransactions,
 } from '@/lib/algorand';
 
 interface CertificateRecord {
@@ -35,7 +36,25 @@ export default function CertificatePage() {
     const [records, setRecords] = useState<CertificateRecord[]>([]);
     const [verifyMode, setVerifyMode] = useState<boolean>(false);
     const [verifyResult, setVerifyResult] = useState<'match' | 'no-match' | null>(null);
+
     const [successTxId, setSuccessTxId] = useState<string | null>(null);
+
+    // Fetch existing certificates when wallet connects
+    useEffect(() => {
+        if (address) {
+            fetchCertificateTransactions(address).then(fetchedRecords => {
+                setRecords(prev => {
+                    // Combine and deduplicate based on txId
+                    const combined = [...prev, ...fetchedRecords];
+                    const uniqueMap = new Map();
+                    combined.forEach(item => uniqueMap.set(item.txId, item));
+                    return Array.from(uniqueMap.values()).sort((a, b) =>
+                        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                    );
+                });
+            });
+        }
+    }, [address]);
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
