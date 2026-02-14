@@ -29,7 +29,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen scanlines">
+    <div className="min-h-screen scanlines overflow-hidden w-full relative">
       <main className="max-w-6xl mx-auto px-6 md:px-12">
         <motion.div
           variants={container}
@@ -37,7 +37,7 @@ export default function HomePage() {
           animate="show"
         >
           {/* === HERO === */}
-          <motion.section variants={item} className="pt-12 md:pt-20 pb-20 relative min-h-[600px] flex flex-col md:flex-row items-center gap-8">
+          <motion.section variants={item} className="pt-12 md:pt-20 pb-20 relative min-h-[600px] flex flex-col md:flex-row items-center gap-8 overflow-hidden">
             <Spotlight
               className="-top-40 left-0 md:left-60 md:-top-20"
               fill="#F5D000"
@@ -88,8 +88,8 @@ export default function HomePage() {
             </div>
 
             {/* Right Content - 3D Scene */}
-            <div className="flex-1 w-full h-[400px] md:h-[600px] relative group/3d">
-              <div className="absolute top-4 right-4 z-20">
+            <div className="flex-1 w-full h-[400px] md:h-[600px] relative group/3d z-10">
+              <div className="absolute top-4 right-4 z-30">
                 <Button
                   variant="outline"
                   size="sm"
@@ -101,7 +101,9 @@ export default function HomePage() {
                 </Button>
               </div>
 
-              <div className="absolute inset-0 z-0 transition-opacity duration-500">
+
+
+              <div className="absolute inset-0 z-20 transition-opacity duration-500">
                 {show3D ? (
                   <SplineScene
                     scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
@@ -320,6 +322,6 @@ export default function HomePage() {
           </footer >
         </motion.div>
       </main>
-    </div>
+    </div >
   );
 }

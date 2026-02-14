@@ -51,7 +51,7 @@ export default function CampusAI() {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+        <div className="fixed bottom-24 md:bottom-6 right-6 z-50 flex flex-col items-end gap-4">
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
@@ -83,8 +83,8 @@ export default function CampusAI() {
                                         )}
                                         <div
                                             className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${msg.role === 'user'
-                                                    ? 'bg-primary text-primary-foreground rounded-tr-none'
-                                                    : 'bg-secondary text-foreground rounded-tl-none border border-border/50'
+                                                ? 'bg-primary text-primary-foreground rounded-tr-none'
+                                                : 'bg-secondary text-foreground rounded-tl-none border border-border/50'
                                                 }`}
                                         >
                                             <p className="whitespace-pre-wrap">{msg.content}</p>

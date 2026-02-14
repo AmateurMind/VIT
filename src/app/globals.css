@@ -59,6 +59,9 @@ body {
     linear-gradient(rgba(16, 32, 53, 0.06) 1px, transparent 1px),
     linear-gradient(90deg, rgba(16, 32, 53, 0.06) 1px, transparent 1px);
   background-size: 50px 50px;
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
 }
 
 .dark body {

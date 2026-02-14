@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import CampusAI from '@/components/CampusAI';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import Navbar from '@/components/Navbar';
+import MobileBottomBar from '@/components/MobileBottomBar';
 
 const orbitron = Orbitron({
   subsets: ['latin'],
@@ -26,6 +27,14 @@ export const metadata: Metadata = {
   description: 'Decentralized Voting & Verification System.',
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -36,7 +45,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       )}>
         <WalletProvider>
           <Navbar />
-          {children}
+          <main className="pb-20 md:pb-0">
+            {children}
+          </main>
+          <MobileBottomBar />
           <CampusAI />
           <SpeedInsights />
         </WalletProvider>

@@ -152,7 +152,7 @@ export default function CertificatePage() {
 
     return (
         <div className="min-h-screen">
-            <main className="max-w-4xl mx-auto px-6 md:px-12 py-12">
+            <main className="max-w-4xl mx-auto px-6 md:px-12 py-12 pb-24 md:pb-12">
                 <motion.div variants={container} initial="hidden" animate="show">
                     {/* Page Title */}
                     <motion.div variants={item} className="text-center mb-10">
@@ -163,8 +163,8 @@ export default function CertificatePage() {
                         <p className="text-muted-foreground">Store, verify, and track your certificates on the blockchain.</p>
                     </motion.div>
 
-                    {/* Navigation Tabs */}
-                    <motion.div variants={item} className="flex justify-center mb-8">
+                    {/* Navigation Tabs (Desktop) */}
+                    <motion.div variants={item} className="flex justify-center mb-8 hidden md:flex">
                         <div className="bg-card/50 backdrop-blur-sm p-1 rounded-xl border border-border inline-flex">
                             {(['store', 'verify', 'history'] as const).map((tab) => (
                                 <button
@@ -476,6 +476,47 @@ export default function CertificatePage() {
                     </div>
                 </motion.div>
             </main>
+
+            {/* Mobile Bottom Navigation */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t border-border md:hidden safe-area-bottom">
+                <div className="flex justify-around items-center p-2">
+                    {(['store', 'verify', 'history'] as const).map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => {
+                                setActiveTab(tab);
+                                setVerifyResult(null);
+                                setError(null);
+                                setStatus('');
+                                setSelectedFile(null);
+                                setFileHash(null);
+                                if (fileInputRef.current) fileInputRef.current.value = '';
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all duration-300 w-full ${activeTab === tab
+                                ? 'text-primary'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            <div className={`p-1.5 rounded-full transition-all ${activeTab === tab ? 'bg-primary/10' : ''}`}>
+                                {tab === 'store' && <Upload className="w-5 h-5" />}
+                                {tab === 'verify' && <Search className="w-5 h-5" />}
+                                {tab === 'history' && <History className="w-5 h-5" />}
+                            </div>
+                            <span className="text-[10px] font-display uppercase tracking-wider font-medium">
+                                {tab}
+                            </span>
+                            {activeTab === tab && (
+                                <motion.div
+                                    layoutId="bottomNavIndicator"
+                                    className="absolute bottom-0 w-12 h-1 bg-primary rounded-t-full"
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                />
+                            )}
+                        </button>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }
