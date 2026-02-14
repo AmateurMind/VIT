@@ -50,6 +50,7 @@ export interface AttendanceRecord {
         lat: number;
         long: number;
     };
+    locationVerified?: boolean;
     distance?: number; // Calculated on client
 }
 
@@ -57,6 +58,7 @@ export interface AttendanceSessionSummary {
     sessionId: string;
     totalTransactions: number;
     presentStudents: number;
+    geoVerifiedTransactions: number;
     latestTimestamp: string;
 }
 
@@ -144,12 +146,19 @@ export async function fetchAttendanceForSession(sessionId: string): Promise<Atte
                     const noteData = JSON.parse(noteString);
 
                     if (noteData.type === 'ATTENDANCE' && noteData.sessionId === sessionId) {
+                        const hasGeoProof = Boolean(
+                            noteData.locationHash ||
+                            noteData.locationCell ||
+                            (noteData.lat && noteData.long)
+                        );
+
                         records.push({
                             sessionId: noteData.sessionId,
                             timestamp: new Date(txn['round-time'] * 1000).toISOString(),
                             txId: txn.id,
                             sender: txn.sender,
                             studentName: noteData.name || 'Anonymous',
+                            locationVerified: hasGeoProof,
                             location: noteData.lat && noteData.long ? {
                                 lat: noteData.lat,
                                 long: noteData.long
@@ -187,7 +196,7 @@ export async function fetchAttendanceSessionsSummary(): Promise<AttendanceSessio
 
         const response = await query.do();
 
-        const bySession = new Map<string, { txns: number; students: Set<string>; latest: number }>();
+        const bySession = new Map<string, { txns: number; geoTxns: number; students: Set<string>; latest: number }>();
 
         for (const txn of response.transactions) {
             try {
@@ -198,8 +207,11 @@ export async function fetchAttendanceSessionsSummary(): Promise<AttendanceSessio
 
                 if (noteData.type !== 'ATTENDANCE' || !noteData.sessionId) continue;
 
-                const current = bySession.get(noteData.sessionId) ?? { txns: 0, students: new Set<string>(), latest: 0 };
+                const current = bySession.get(noteData.sessionId) ?? { txns: 0, geoTxns: 0, students: new Set<string>(), latest: 0 };
                 current.txns += 1;
+                if (noteData.locationHash || noteData.locationCell || (noteData.lat && noteData.long)) {
+                    current.geoTxns += 1;
+                }
 
                 const studentKey = (noteData.name || txn.sender || '').toString();
                 if (studentKey) current.students.add(studentKey);
@@ -218,6 +230,7 @@ export async function fetchAttendanceSessionsSummary(): Promise<AttendanceSessio
                 sessionId,
                 totalTransactions: value.txns,
                 presentStudents: value.students.size,
+                geoVerifiedTransactions: value.geoTxns,
                 latestTimestamp: new Date(value.latest || Date.now()).toISOString(),
             }))
             .sort((a, b) => new Date(b.latestTimestamp).getTime() - new Date(a.latestTimestamp).getTime());

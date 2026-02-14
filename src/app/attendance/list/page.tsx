@@ -108,6 +108,7 @@ export default function AttendanceListPage() {
               >
                 <div className="font-mono text-xs">{s.sessionId}</div>
                 <div className="text-xs">Students: {s.presentStudents}</div>
+                <div className="text-xs">Geo Txns: {s.geoVerifiedTransactions}</div>
               </button>
             ))}
           </div>
@@ -136,6 +137,7 @@ export default function AttendanceListPage() {
               <th className="text-left p-2">Student Name</th>
               <th className="text-left p-2">Wallet</th>
               <th className="text-left p-2">Time</th>
+              <th className="text-left p-2">Geo</th>
               <th className="text-left p-2">Transaction</th>
             </tr>
           </thead>
@@ -145,6 +147,7 @@ export default function AttendanceListPage() {
                 <td className="p-2">{row.studentName ?? 'Unknown'}</td>
                 <td className="p-2 font-mono">{row.sender}</td>
                 <td className="p-2">{new Date(row.timestamp).toLocaleString()}</td>
+                <td className="p-2">{row.locationVerified ? 'Yes' : 'No'}</td>
                 <td className="p-2">
                   <a href={getExplorerUrl(row.txId)} target="_blank" rel="noreferrer" className="underline">
                     {row.txId}
