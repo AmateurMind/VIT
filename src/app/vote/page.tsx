@@ -20,7 +20,7 @@ import {
     VOTING_APP_ID,
     normalizeSignedTxnBytes,
 } from '@/lib/algorand';
-import { notifyN8N } from '@/lib/n8n';
+import { notifyVoteCast } from '@/lib/n8n';
 
 interface VotingState {
     isOpen: boolean;
@@ -172,13 +172,11 @@ export default function VotePage() {
             await fetchState();
 
             // Notify n8n
-            notifyN8N({
-                event: 'VOTE_CAST',
-                details: {
-                    wallet: address,
-                    actionSummary: `Voted for Option ${choice === 0 ? 'A' : 'B'}`,
-                    txId: result.txid
-                }
+            // Notify n8n
+            notifyVoteCast({
+                voter: address,
+                option: choice === 0 ? 'Option A' : 'Option B',
+                explorerUrl: getExplorerUrl(result.txid)
             });
         } catch (err: any) {
             console.error('Voting error:', err);

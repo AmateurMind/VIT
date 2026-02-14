@@ -330,8 +330,7 @@ export async function getSuggestedParams(): Promise<algosdk.SuggestedParams> {
     const params = await client.getTransactionParams().do();
     debugLog('getSuggestedParams:success', {
         fee: params.fee,
-        firstValid: params.firstValid,
-        lastValid: params.lastValid,
+        // firstValid/lastValid might be missing in some SDK versions' type definitions
     });
     return params;
 }
@@ -431,7 +430,7 @@ export async function getVotingParticipationStatus(
     const accountInfo = await client.accountInformation(address).do();
     const localApps = accountInfo.appsLocalState || [];
     debugLog('getVotingParticipationStatus:apps-local-state-count', { count: localApps.length });
-    const appLocal = localApps.find((app) => Number(app.id) === appId);
+    const appLocal = localApps.find((app: any) => Number(app.id) === appId);
 
     if (!appLocal) {
         debugLog('getVotingParticipationStatus:not-opted-in', { appId, address });
@@ -463,7 +462,7 @@ export function createOptInTxn(
     suggestedParams: algosdk.SuggestedParams
 ): algosdk.Transaction {
     return algosdk.makeApplicationCallTxnFromObject({
-        sender,
+        from: sender,
         appIndex: appId,
         onComplete: algosdk.OnApplicationComplete.OptInOC,
         suggestedParams,
@@ -486,7 +485,7 @@ export function createVoteTxn(
     ];
 
     return algosdk.makeApplicationCallTxnFromObject({
-        sender,
+        from: sender,
         appIndex: appId,
         onComplete: algosdk.OnApplicationComplete.NoOpOC,
         appArgs,
@@ -506,13 +505,14 @@ export function createHashStoreTxn(
     // Use a simple payment transaction with note for storing hash
     // This is cheaper than app calls for simple proof storage
     // Ensure the note contains the hash and the type
-    const note = { ...noteObject, hash };
+    // Ensure the note contains the hash and the type
+    const noteData = { ...noteObject, hash };
 
     return algosdk.makePaymentTxnWithSuggestedParamsFromObject({
         from: sender,
         to: sender, // Self-transfer (0 ALGO)
         amount: 0,
-        note: new TextEncoder().encode(JSON.stringify(note)),
+        note: new TextEncoder().encode(JSON.stringify(noteData)),
         suggestedParams,
     });
 }

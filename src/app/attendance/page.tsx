@@ -18,7 +18,7 @@ import {
     AttendanceRecord,
     normalizeSignedTxnBytes
 } from '@/lib/algorand';
-import { notifyN8N } from '@/lib/n8n';
+import { notifyAttendanceMarked } from '@/lib/n8n';
 
 export default function AttendancePage() {
     const { address, isConnected, connect, peraWallet } = useWallet();
@@ -171,19 +171,12 @@ export default function AttendancePage() {
             await refreshLiveList(sessionId);
 
             // Notify n8n
-            notifyN8N({
-                event: 'ATTENDANCE_MARKED',
-                details: {
-                    wallet: address,
-                    studentName: studentName,
-                    actionSummary: `Marked attendance for session ${sessionId}`,
-                    txId: txId,
-                    metadata: {
-                        lat: location.lat,
-                        long: location.long,
-                        distance: 0 // Ideally calculated
-                    }
-                }
+            // Notify n8n
+            notifyAttendanceMarked({
+                studentName: studentName,
+                sessionId: sessionId,
+                locationVerified: !!(location.lat && location.long),
+                explorerUrl: getExplorerUrl(txId)
             });
 
         } catch (err: any) {
@@ -309,22 +302,24 @@ export default function AttendancePage() {
                                             Please ensure you are currently in the classroom. Location access is required.
                                         </p>
 
-                                        <div className="flex gap-3 mb-4">
+                                        <div className="flex flex-col md:flex-row gap-3 mb-4">
                                             <input
                                                 type="text"
                                                 value={sessionId}
                                                 onChange={(e) => setSessionId(e.target.value)}
                                                 placeholder="Session ID (Ask Teacher)"
-                                                className="flex-1 bg-secondary border border-border px-3 py-2 text-sm font-mono text-foreground focus:outline-none focus:border-primary placeholder:text-muted-foreground/50"
+                                                className="w-full md:flex-1 bg-secondary border border-border px-3 py-2 text-sm font-mono text-foreground focus:outline-none focus:border-primary placeholder:text-muted-foreground/50"
                                             />
-                                            {isTeacher && (
-                                                <Button variant="outline" size="sm" onClick={generateSessionId} className="font-display uppercase tracking-wider text-xs border-primary/40 text-primary">
-                                                    New Session
+                                            <div className="flex gap-2">
+                                                {isTeacher && (
+                                                    <Button variant="outline" size="sm" onClick={generateSessionId} className="flex-1 md:flex-none font-display uppercase tracking-wider text-xs border-primary/40 text-primary">
+                                                        New Session
+                                                    </Button>
+                                                )}
+                                                <Button variant="ghost" size="sm" onClick={goToAttendanceList} disabled={!sessionId} className="flex-1 md:flex-none font-display uppercase tracking-wider text-xs">
+                                                    Fetch List
                                                 </Button>
-                                            )}
-                                            <Button variant="ghost" size="sm" onClick={goToAttendanceList} disabled={!sessionId} className="font-display uppercase tracking-wider text-xs">
-                                                Fetch List
-                                            </Button>
+                                            </div>
                                         </div>
 
                                         <div className="mb-4">
