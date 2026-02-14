@@ -13,7 +13,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@splinetool/react-spline": "^4.1.0",
     "@splinetool/runtime": "^1.12.53",
-    "algosdk": "^2.7.0",
+    "algosdk": "^3.5.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.0",

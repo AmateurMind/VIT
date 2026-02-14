@@ -146,7 +146,7 @@ export default function AttendancePage() {
             setStatus('Recording on Algorand...');
             const client = getAlgodClient();
             const result = await client.sendRawTransaction(signedTxns[0]).do();
-            const txId = txn.txID() || result.txId || result?.txid || '';
+            const txId = txn.txID() || result.txid || '';
 
             setStatus('Confirming on-chain...');
             await new Promise(resolve => setTimeout(resolve, 3000));

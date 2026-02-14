@@ -14,7 +14,16 @@ const ALGOD_TOKEN = process.env.NEXT_PUBLIC_ALGOD_TOKEN || '';
 const ATTENDANCE_LOOKBACK_ROUNDS = 300000;
 
 // Helper to decode base64 to string safely in browser/node
-function safeDecodeBase64(str: string): string {
+function safeDecodeBase64(str: string | Uint8Array): string {
+    if (str instanceof Uint8Array) {
+        if (typeof TextDecoder !== 'undefined') {
+            return new TextDecoder().decode(str);
+        }
+        if (typeof Buffer !== 'undefined') {
+            return Buffer.from(str).toString('utf-8');
+        }
+        return '';
+    }
     if (typeof Buffer !== 'undefined') {
         return Buffer.from(str, 'base64').toString('utf-8');
     }
@@ -24,8 +33,24 @@ function safeDecodeBase64(str: string): string {
     return '';
 }
 
+function safeDecodeNote(note: string | Uint8Array): string {
+    if (typeof note === 'string') {
+        return safeDecodeBase64(note);
+    }
+    if (typeof Buffer !== 'undefined') {
+        return Buffer.from(note).toString('utf-8');
+    }
+    if (typeof TextDecoder !== 'undefined') {
+        return new TextDecoder().decode(note);
+    }
+    return '';
+}
+
 // Helper to decode base64 to Uint8Array safely
-function safeBase64ToUint8Array(str: string): Uint8Array {
+function safeBase64ToUint8Array(str: string | Uint8Array): Uint8Array {
+    if (str instanceof Uint8Array) {
+        return str;
+    }
     if (typeof Buffer !== 'undefined') {
         return new Uint8Array(Buffer.from(str, 'base64'));
     }
@@ -93,7 +118,7 @@ async function getRecentMinRound(): Promise<number | undefined> {
     try {
         const client = getAlgodClient();
         const status = await client.status().do();
-        const currentRound = status['last-round'] || status['lastRound'] || 0;
+        const currentRound = status.lastRound || 0;
         if (!currentRound) return undefined;
         return Math.max(1, Number(currentRound) - ATTENDANCE_LOOKBACK_ROUNDS);
     } catch {
@@ -118,16 +143,16 @@ export async function fetchCertificateTransactions(address: string): Promise<Cer
         for (const txn of response.transactions) {
             try {
                 if (txn.note) {
-                    const noteBuffer = Buffer.from(txn.note, 'base64');
-                    const noteString = noteBuffer.toString('utf-8');
+                    const noteString = safeDecodeNote(txn.note);
                     const noteData = JSON.parse(noteString);
 
                     if (noteData.type === 'CERTIFICATE' && noteData.hash) {
+                        if (!txn.id || !txn.sender || !txn.roundTime) continue;
                         records.push({
                             fileName: 'Certificate', // Filename isn't stored on-chain to save space/privacy, handled by UI context or generic
                             hash: noteData.hash,
                             txId: txn.id,
-                            timestamp: new Date(txn['round-time'] * 1000).toISOString(),
+                            timestamp: new Date(txn.roundTime * 1000).toISOString(),
                             sender: txn.sender
                         });
                     }
@@ -168,11 +193,11 @@ export async function fetchAttendanceForSession(sessionId: string): Promise<Atte
         for (const txn of response.transactions) {
             try {
                 if (txn.note) {
-                    const noteBuffer = Buffer.from(txn.note, 'base64');
-                    const noteString = noteBuffer.toString('utf-8');
+                    const noteString = safeDecodeNote(txn.note);
                     const noteData = JSON.parse(noteString);
 
                     if (noteData.type === 'ATTENDANCE' && noteData.sessionId === sessionId) {
+                        if (!txn.id || !txn.sender || !txn.roundTime) continue;
                         const hasGeoProof = Boolean(
                             noteData.locationHash ||
                             noteData.locationCell ||
@@ -181,7 +206,7 @@ export async function fetchAttendanceForSession(sessionId: string): Promise<Atte
 
                         records.push({
                             sessionId: noteData.sessionId,
-                            timestamp: new Date(txn['round-time'] * 1000).toISOString(),
+                            timestamp: new Date(txn.roundTime * 1000).toISOString(),
                             txId: txn.id,
                             sender: txn.sender,
                             studentName: noteData.name || 'Anonymous',
@@ -228,7 +253,7 @@ export async function fetchAttendanceSessionsSummary(): Promise<AttendanceSessio
         for (const txn of response.transactions) {
             try {
                 if (!txn.note) continue;
-                const noteString = safeDecodeBase64(txn.note);
+                const noteString = safeDecodeNote(txn.note);
                 const noteData = JSON.parse(noteString);
 
                 if (noteData.type !== 'ATTENDANCE' || !noteData.sessionId) continue;
@@ -242,7 +267,7 @@ export async function fetchAttendanceSessionsSummary(): Promise<AttendanceSessio
                 const studentKey = (noteData.name || txn.sender || '').toString();
                 if (studentKey) current.students.add(studentKey);
 
-                const roundTime = (txn['round-time'] || 0) * 1000;
+                const roundTime = (txn.roundTime || 0) * 1000;
                 if (roundTime > current.latest) current.latest = roundTime;
 
                 bySession.set(noteData.sessionId, current);
@@ -275,9 +300,8 @@ export async function getSuggestedParams(): Promise<algosdk.SuggestedParams> {
     const params = await client.getTransactionParams().do();
     debugLog('getSuggestedParams:success', {
         fee: params.fee,
-        firstRound: params.firstRound,
-        lastRound: params.lastRound,
-        genesisId: params.genesisID,
+        firstValid: params.firstValid,
+        lastValid: params.lastValid,
     });
     return params;
 }
@@ -295,7 +319,7 @@ export async function getVotingState(appId: number): Promise<{
     const client = getAlgodClient();
     const appInfo = await client.getApplicationByID(appId).do();
 
-    const globalState = appInfo.params['global-state'] || [];
+    const globalState = appInfo.params.globalState || [];
 
     let isOpen = false;
     let option0 = 0;
@@ -308,13 +332,13 @@ export async function getVotingState(appId: number): Promise<{
 
         switch (key) {
             case 'is_open':
-                isOpen = value.uint === 1;
+                isOpen = Number(value.uint || 0) === 1;
                 break;
             case 'option_0':
-                option0 = value.uint || 0;
+                option0 = Number(value.uint || 0);
                 break;
             case 'option_1':
-                option1 = value.uint || 0;
+                option1 = Number(value.uint || 0);
                 break;
             case 'creator':
                 creator = algosdk.encodeAddress(safeBase64ToUint8Array(value.bytes));
@@ -335,11 +359,11 @@ export async function hasUserVoted(appId: number, address: string): Promise<bool
 
     try {
         const accountInfo = await client.accountApplicationInformation(address, appId).do();
-        const localState = accountInfo['app-local-state']?.['key-value'] || [];
+        const localState = accountInfo.appLocalState?.keyValue || [];
 
         for (const state of localState) {
             const key = safeDecodeBase64(state.key);
-            if (key === 'has_voted' && state.value.uint === 1) {
+            if (key === 'has_voted' && Number(state.value.uint || 0) === 1) {
                 return true;
             }
         }
@@ -375,21 +399,21 @@ export async function getVotingParticipationStatus(
     debugLog('getVotingParticipationStatus:start', { appId, address });
     const client = getAlgodClient();
     const accountInfo = await client.accountInformation(address).do();
-    const localApps = accountInfo['apps-local-state'] || [];
+    const localApps = accountInfo.appsLocalState || [];
     debugLog('getVotingParticipationStatus:apps-local-state-count', { count: localApps.length });
-    const appLocal = localApps.find((app: { id: number }) => app.id === appId);
+    const appLocal = localApps.find((app) => Number(app.id) === appId);
 
     if (!appLocal) {
         debugLog('getVotingParticipationStatus:not-opted-in', { appId, address });
         return { optedIn: false, hasVoted: false };
     }
 
-    const keyValues = appLocal['key-value'] || [];
+    const keyValues = appLocal.keyValue || [];
     let voted = false;
 
     for (const state of keyValues) {
         const key = safeDecodeBase64(state.key);
-        if (key === 'has_voted' && state.value?.uint === 1) {
+        if (key === 'has_voted' && Number(state.value?.uint || 0) === 1) {
             voted = true;
             break;
         }
@@ -408,7 +432,12 @@ export function createOptInTxn(
     appId: number,
     suggestedParams: algosdk.SuggestedParams
 ): algosdk.Transaction {
-    return algosdk.makeApplicationOptInTxn(sender, suggestedParams, appId);
+    return algosdk.makeApplicationCallTxnFromObject({
+        sender,
+        appIndex: appId,
+        onComplete: algosdk.OnApplicationComplete.OptInOC,
+        suggestedParams,
+    });
 }
 
 /**
@@ -427,7 +456,7 @@ export function createVoteTxn(
     ];
 
     return algosdk.makeApplicationCallTxnFromObject({
-        from: sender,
+        sender,
         appIndex: appId,
         onComplete: algosdk.OnApplicationComplete.NoOpOC,
         appArgs,
@@ -450,8 +479,8 @@ export function createHashStoreTxn(
     const note = { ...noteObject, hash };
 
     return algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-        from: sender,
-        to: sender, // Self-transfer (0 ALGO)
+        sender,
+        receiver: sender, // Self-transfer (0 ALGO)
         amount: 0,
         note: new TextEncoder().encode(JSON.stringify(note)),
         suggestedParams,

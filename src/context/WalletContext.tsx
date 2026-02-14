@@ -64,7 +64,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     const enableGuestMode = useCallback(() => {
         const account = algosdk.generateAccount();
-        setAddress(account.addr);
+        setAddress(account.addr.toString());
         setGuestSecretKey(account.sk);
         setIsGuestMode(true);
     }, []);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -11,7 +11,7 @@ import {
   type AttendanceSessionSummary
 } from '@/lib/algorand';
 
-export default function AttendanceListPage() {
+function AttendanceListContent() {
   const searchParams = useSearchParams();
   const initialSessionId = searchParams.get('sessionId') ?? '';
 
@@ -159,5 +159,13 @@ export default function AttendanceListPage() {
         </table>
       </div>
     </main>
+  );
+}
+
+export default function AttendanceListPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen p-6 max-w-5xl mx-auto">Loading...</main>}>
+      <AttendanceListContent />
+    </Suspense>
   );
 }

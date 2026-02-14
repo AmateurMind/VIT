@@ -122,10 +122,10 @@ export default function VotePage() {
             }
             setStatus('Sending to Algorand...');
             const client = getAlgodClient();
-            const { txId } = await client.sendRawTransaction(signedTxns[0]).do();
+            const result = await client.sendRawTransaction(signedTxns[0]).do();
             setStatus('Confirming...');
             await new Promise(resolve => setTimeout(resolve, 4000));
-            setTxId(txId);
+            setTxId(result.txid);
             setUserOptedIn(true);
             setStatus('Opted in successfully.');
             await fetchState();
@@ -165,7 +165,7 @@ export default function VotePage() {
             const result = await client.sendRawTransaction(signedTxns[0]).do();
             setStatus('Confirming on-chain...');
             await new Promise(resolve => setTimeout(resolve, 4000));
-            setTxId(result.txId);
+            setTxId(result.txid);
             setUserVoted(true);
             setStatus('Vote recorded on blockchain!');
             await fetchState();
@@ -176,7 +176,7 @@ export default function VotePage() {
                 details: {
                     wallet: address,
                     actionSummary: `Voted for Option ${choice === 0 ? 'A' : 'B'}`,
-                    txId: result.txId
+                    txId: result.txid
                 }
             });
         } catch (err: any) {

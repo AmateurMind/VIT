@@ -88,13 +88,22 @@ export default function CertificatePage() {
         setSuccessTxId(null);
         try {
             const params = await getSuggestedParams();
-            const txn = createHashStoreTxn(address, fileHash, 'CERTIFICATE', params);
+            const txn = createHashStoreTxn(
+                address,
+                fileHash,
+                {
+                    type: 'CERTIFICATE',
+                    fileName: selectedFile.name,
+                    timestamp: new Date().toISOString(),
+                },
+                params
+            );
             setStatus('Sign in Pera Wallet...');
             const signedTxns = await peraWallet.signTransaction([[{ txn }]]);
             setStatus('Storing hash on Algorand...');
             const client = getAlgodClient();
             const result = await client.sendRawTransaction(signedTxns[0]).do();
-            const txId = txn.txID() || result.txId || result?.txid || '';
+            const txId = txn.txID() || result.txid || '';
             console.log('Transaction result:', result, 'txId:', txId);
             setStatus('Confirming on-chain...');
             await new Promise(resolve => setTimeout(resolve, 4000));
@@ -159,7 +168,7 @@ export default function CertificatePage() {
 
                     {/* Stored Records - moved to top */}
                     {records.length > 0 && (
-                        <motion.div variants={item} className="mb-6">
+                        <motion.div variants={item} initial="hidden" animate="show" className="mb-6">
                             <Card className="bg-card/50 border-border backdrop-blur-sm">
                                 <CardHeader className="pb-3 border-b border-border/50">
                                     <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2 text-primary">
@@ -234,7 +243,7 @@ export default function CertificatePage() {
 
                     {/* Connect */}
                     {!isConnected && !verifyMode && (
-                        <motion.div variants={item}>
+                        <motion.div variants={item} initial="hidden" animate="show">
                             <Card className="bg-card border-border mb-5">
                                 <CardContent className="pt-6 text-center">
                                     <Wallet className="w-8 h-8 text-primary mx-auto mb-3" />

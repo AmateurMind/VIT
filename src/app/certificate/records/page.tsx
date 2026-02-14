@@ -83,7 +83,7 @@ export default function CertificateRecordsPage() {
                     </motion.div>
 
                     {!isConnected ? (
-                        <motion.div variants={item}>
+                        <motion.div variants={item} initial="hidden" animate="show">
                             <Card className="bg-card border-border mb-5 max-w-md mx-auto">
                                 <CardContent className="pt-8 text-center pb-8">
                                     <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -98,70 +98,72 @@ export default function CertificateRecordsPage() {
                             </Card>
                         </motion.div>
                     ) : (
-                        <Card className="border-border bg-card shadow-sm overflow-hidden">
-                            {loading ? (
-                                <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                    <p className="text-sm font-mono text-muted-foreground animate-pulse">Fetching records from blockchain...</p>
-                                </div>
-                            ) : records.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-                                    <div className="bg-muted/50 w-20 h-20 rounded-full flex items-center justify-center mb-4">
-                                        <FileCheck className="w-10 h-10 text-muted-foreground/40" />
+                        <motion.div variants={item} initial="hidden" animate="show">
+                            <Card className="border-border bg-card shadow-sm overflow-hidden">
+                                {loading ? (
+                                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                        <p className="text-sm font-mono text-muted-foreground animate-pulse">Fetching records from blockchain...</p>
                                     </div>
-                                    <h3 className="font-display text-lg font-bold text-foreground mb-2">No Records Found</h3>
-                                    <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-6">
-                                        You haven't stored any certificates on this account yet.
-                                    </p>
-                                    <Button variant="outline" asChild>
-                                        <Link href="/certificate">Store Your First Certificate</Link>
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="rounded-md border">
-                                    <Table>
-                                        <TableHeader className="bg-muted/50">
-                                            <TableRow>
-                                                <TableHead className="w-[300px] font-bold text-foreground">File Name</TableHead>
-                                                <TableHead className="font-bold text-foreground">Date Stored</TableHead>
-                                                <TableHead className="font-bold text-foreground">SHA-256 Hash</TableHead>
-                                                <TableHead className="text-right font-bold text-foreground">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {records.map((record) => (
-                                                <TableRow key={record.txId} className="group hover:bg-muted/30">
-                                                    <TableCell className="font-medium text-foreground">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
-                                                                <FileCheck className="w-4 h-4 text-primary" />
-                                                            </div>
-                                                            <span className="font-semibold">{record.fileName}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-muted-foreground font-mono text-xs">
-                                                        {new Date(record.timestamp).toLocaleString()}
-                                                    </TableCell>
-                                                    <TableCell className="font-mono text-xs text-muted-foreground max-w-[200px]">
-                                                        <div className="flex items-center gap-2 bg-muted/30 px-2 py-1 rounded border border-border/50 group-hover:border-primary/20 transition-colors cursor-help" title={record.hash}>
-                                                            <Hash className="w-3 h-3 text-primary/70" />
-                                                            <span className="truncate select-all">{record.hash}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="ghost" size="sm" className="h-8 text-xs font-display uppercase tracking-wider text-primary hover:text-primary hover:bg-primary/10" asChild>
-                                                            <a href={getExplorerUrl(record.txId)} target="_blank" rel="noopener noreferrer">
-                                                                Explorer <ExternalLink className="w-3 h-3 ml-1" />
-                                                            </a>
-                                                        </Button>
-                                                    </TableCell>
+                                ) : records.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+                                        <div className="bg-muted/50 w-20 h-20 rounded-full flex items-center justify-center mb-4">
+                                            <FileCheck className="w-10 h-10 text-muted-foreground/40" />
+                                        </div>
+                                        <h3 className="font-display text-lg font-bold text-foreground mb-2">No Records Found</h3>
+                                        <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-6">
+                                            You haven't stored any certificates on this account yet.
+                                        </p>
+                                        <Button variant="outline" asChild>
+                                            <Link href="/certificate">Store Your First Certificate</Link>
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-md border">
+                                        <Table>
+                                            <TableHeader className="bg-muted/50">
+                                                <TableRow>
+                                                    <TableHead className="w-[300px] font-bold text-foreground">File Name</TableHead>
+                                                    <TableHead className="font-bold text-foreground">Date Stored</TableHead>
+                                                    <TableHead className="font-bold text-foreground">SHA-256 Hash</TableHead>
+                                                    <TableHead className="text-right font-bold text-foreground">Actions</TableHead>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            )}
-                        </Card>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {records.map((record) => (
+                                                    <TableRow key={record.txId} className="group hover:bg-muted/30">
+                                                        <TableCell className="font-medium text-foreground">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                                                                    <FileCheck className="w-4 h-4 text-primary" />
+                                                                </div>
+                                                                <span className="font-semibold">{record.fileName}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-muted-foreground font-mono text-xs">
+                                                            {new Date(record.timestamp).toLocaleString()}
+                                                        </TableCell>
+                                                        <TableCell className="font-mono text-xs text-muted-foreground max-w-[200px]">
+                                                            <div className="flex items-center gap-2 bg-muted/30 px-2 py-1 rounded border border-border/50 group-hover:border-primary/20 transition-colors cursor-help" title={record.hash}>
+                                                                <Hash className="w-3 h-3 text-primary/70" />
+                                                                <span className="truncate select-all">{record.hash}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button variant="ghost" size="sm" className="h-8 text-xs font-display uppercase tracking-wider text-primary hover:text-primary hover:bg-primary/10" asChild>
+                                                                <a href={getExplorerUrl(record.txId)} target="_blank" rel="noopener noreferrer">
+                                                                    Explorer <ExternalLink className="w-3 h-3 ml-1" />
+                                                                </a>
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                )}
+                            </Card>
+                        </motion.div>
                     )}
                 </motion.div>
             </main>
