@@ -5,6 +5,8 @@
 
 import algosdk from 'algosdk';
 
+const debugLog = (...args: unknown[]) => console.log('[ALGORAND]', new Date().toISOString(), ...args);
+
 // Algorand TestNet configuration
 const ALGOD_SERVER = process.env.NEXT_PUBLIC_ALGOD_SERVER || 'https://testnet-api.algonode.cloud';
 const ALGOD_PORT = process.env.NEXT_PUBLIC_ALGOD_PORT || '443';
@@ -17,6 +19,7 @@ export const VOTING_APP_ID = Number(process.env.NEXT_PUBLIC_VOTING_APP_ID) || 0;
  * Get Algorand client for TestNet
  */
 export function getAlgodClient(): algosdk.Algodv2 {
+    debugLog('getAlgodClient', { server: ALGOD_SERVER, port: ALGOD_PORT });
     return new algosdk.Algodv2(ALGOD_TOKEN, ALGOD_SERVER, ALGOD_PORT);
 }
 
@@ -24,6 +27,7 @@ export function getAlgodClient(): algosdk.Algodv2 {
  * Get Algorand Indexer client for TestNet
  */
 export function getIndexerClient(): algosdk.Indexer {
+    debugLog('getIndexerClient', { server: 'https://testnet-idx.algonode.cloud', port: '443' });
     return new algosdk.Indexer('', 'https://testnet-idx.algonode.cloud', '443');
 }
 
@@ -33,6 +37,19 @@ export interface CertificateRecord {
     txId: string;
     timestamp: string;
     sender: string;
+}
+
+export interface AttendanceRecord {
+    sessionId: string;
+    timestamp: string;
+    txId: string;
+    sender: string;
+    studentName?: string;
+    location?: {
+        lat: number;
+        long: number;
+    };
+    distance?: number; // Calculated on client
 }
 
 /**
@@ -66,13 +83,59 @@ export async function fetchCertificateTransactions(address: string): Promise<Cer
                         });
                     }
                 }
-            } catch (e) {
+            } catch {
                 // Skip malformed notes
             }
         }
         return records;
-    } catch (e) {
-        console.error('Error fetching certificates:', e);
+    } catch (error) {
+        console.error('Error fetching certificates:', error);
+        return [];
+    }
+}
+
+/**
+ * Fetch attendance for a specific session ID
+ */
+export async function fetchAttendanceForSession(sessionId: string): Promise<AttendanceRecord[]> {
+    const indexer = getIndexerClient();
+    try {
+        const response = await indexer.searchForTransactions()
+            .txType('pay')
+            .notePrefix(new TextEncoder().encode('{"type":"ATTENDANCE"'))
+            .limit(100)
+            .do();
+
+        const records: AttendanceRecord[] = [];
+
+        for (const txn of response.transactions) {
+            try {
+                if (txn.note) {
+                    const noteBuffer = Buffer.from(txn.note, 'base64');
+                    const noteString = noteBuffer.toString('utf-8');
+                    const noteData = JSON.parse(noteString);
+
+                    if (noteData.type === 'ATTENDANCE' && noteData.sessionId === sessionId) {
+                        records.push({
+                            sessionId: noteData.sessionId,
+                            timestamp: new Date(txn['round-time'] * 1000).toISOString(),
+                            txId: txn.id,
+                            sender: txn.sender,
+                            studentName: noteData.name || 'Anonymous',
+                            location: noteData.lat && noteData.long ? {
+                                lat: noteData.lat,
+                                long: noteData.long
+                            } : undefined
+                        });
+                    }
+                }
+            } catch {
+                // Skip
+            }
+        }
+        return records;
+    } catch (error) {
+        console.error('Error fetching attendance:', error);
         return [];
     }
 }
@@ -81,8 +144,16 @@ export async function fetchCertificateTransactions(address: string): Promise<Cer
  * Get suggested transaction parameters
  */
 export async function getSuggestedParams(): Promise<algosdk.SuggestedParams> {
+    debugLog('getSuggestedParams:start');
     const client = getAlgodClient();
-    return await client.getTransactionParams().do();
+    const params = await client.getTransactionParams().do();
+    debugLog('getSuggestedParams:success', {
+        fee: params.fee,
+        firstRound: params.firstRound,
+        lastRound: params.lastRound,
+        genesisId: params.genesisID,
+    });
+    return params;
 }
 
 /**
@@ -94,6 +165,7 @@ export async function getVotingState(appId: number): Promise<{
     option1: number;
     creator: string;
 }> {
+    debugLog('getVotingState:start', { appId });
     const client = getAlgodClient();
     const appInfo = await client.getApplicationByID(appId).do();
 
@@ -124,7 +196,9 @@ export async function getVotingState(appId: number): Promise<{
         }
     }
 
-    return { isOpen, option0, option1, creator };
+    const state = { isOpen, option0, option1, creator };
+    debugLog('getVotingState:success', state);
+    return state;
 }
 
 /**
@@ -172,12 +246,15 @@ export async function getVotingParticipationStatus(
     appId: number,
     address: string
 ): Promise<{ optedIn: boolean; hasVoted: boolean }> {
+    debugLog('getVotingParticipationStatus:start', { appId, address });
     const client = getAlgodClient();
     const accountInfo = await client.accountInformation(address).do();
     const localApps = accountInfo['apps-local-state'] || [];
+    debugLog('getVotingParticipationStatus:apps-local-state-count', { count: localApps.length });
     const appLocal = localApps.find((app: { id: number }) => app.id === appId);
 
     if (!appLocal) {
+        debugLog('getVotingParticipationStatus:not-opted-in', { appId, address });
         return { optedIn: false, hasVoted: false };
     }
 
@@ -192,7 +269,9 @@ export async function getVotingParticipationStatus(
         }
     }
 
-    return { optedIn: true, hasVoted: voted };
+    const result = { optedIn: true, hasVoted: voted };
+    debugLog('getVotingParticipationStatus:success', result);
+    return result;
 }
 
 /**
@@ -236,16 +315,19 @@ export function createVoteTxn(
 export function createHashStoreTxn(
     sender: string,
     hash: string,
-    note: string,
+    noteObject: any,
     suggestedParams: algosdk.SuggestedParams
 ): algosdk.Transaction {
     // Use a simple payment transaction with note for storing hash
     // This is cheaper than app calls for simple proof storage
+    // Ensure the note contains the hash and the type
+    const note = { ...noteObject, hash };
+
     return algosdk.makePaymentTxnWithSuggestedParamsFromObject({
         from: sender,
         to: sender, // Self-transfer (0 ALGO)
         amount: 0,
-        note: new TextEncoder().encode(JSON.stringify({ type: note, hash })),
+        note: new TextEncoder().encode(JSON.stringify(note)),
         suggestedParams,
     });
 }

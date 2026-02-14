@@ -134,8 +134,12 @@ export default function CertificatePage() {
                     <ArrowLeft className="w-4 h-4" />
                     <span className="font-display text-xs uppercase tracking-[0.2em]">Back</span>
                 </Link>
-                <span className="font-display text-sm uppercase tracking-[0.2em] text-primary">Certificate Module</span>
-                <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">MOD.03</Badge>
+                <div className="flex items-center gap-4">
+                    <Link href="/certificate/records" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                        <span className="font-display text-xs uppercase tracking-[0.2em]">History</span>
+                        <ArrowLeft className="w-4 h-4 rotate-180" />
+                    </Link>
+                </div>
             </header>
 
             <main className="max-w-3xl mx-auto px-6 md:px-12 py-12">
@@ -148,6 +152,50 @@ export default function CertificatePage() {
                         </h1>
                         <p className="text-sm text-muted-foreground">Store and verify certificate authenticity using blockchain hashes.</p>
                     </motion.div>
+
+                    {/* Stored Records - moved to top */}
+                    {records.length > 0 && (
+                        <motion.div variants={item} className="mb-6">
+                            <Card className="bg-card/50 border-border backdrop-blur-sm">
+                                <CardHeader className="pb-3 border-b border-border/50">
+                                    <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2 text-primary">
+                                        <FileCheck className="w-4 h-4" /> Stored Certificates
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-4 space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {records.map((record, index) => (
+                                        <div key={index} className="p-4 bg-background/50 border border-border/60 rounded-lg space-y-3 hover:border-primary/30 transition-colors">
+                                            <div className="flex justify-between items-start gap-3">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <FileCheck className="w-4 h-4 text-emerald-500" />
+                                                        <strong className="text-sm font-display tracking-wide text-foreground">{record.fileName}</strong>
+                                                    </div>
+                                                    <p className="text-xs font-mono text-muted-foreground pl-6">
+                                                        {new Date(record.timestamp).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                <Button variant="outline" size="sm" className="h-7 text-[10px] font-display uppercase tracking-wider border-primary/20 text-primary hover:bg-primary/10 hover:text-primary hover:border-primary/40 shrink-0" asChild>
+                                                    <a href={getExplorerUrl(record.txId)} target="_blank" rel="noopener noreferrer">
+                                                        Explorer <ExternalLink className="w-3 h-3 ml-1" />
+                                                    </a>
+                                                </Button>
+                                            </div>
+
+                                            <div className="pl-6 pt-1 border-t border-border/30 mt-2">
+                                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1 font-mono uppercase tracking-widest opacity-70">
+                                                    <Hash className="w-3 h-3" /> SHA-256 Hash
+                                                </div>
+                                                <div className="bg-black/20 p-2 rounded border border-border/30 font-mono text-[10px] text-primary/80 break-all select-all hover:bg-black/30 transition-colors">
+                                                    {record.hash}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
 
                     {/* Mode Toggle */}
                     <motion.div variants={item}>
@@ -213,7 +261,7 @@ export default function CertificatePage() {
                                 >
                                     View Transaction on Explorer <ExternalLink className="w-3 h-3" />
                                 </a>
-                                <p className="text-xs text-emerald-800 break-all font-mono">
+                                <p className="text-[10px] text-emerald-800 break-all font-mono opacity-80 select-all">
                                     {getExplorerUrl(successTxId)}
                                 </p>
                             </div>
@@ -306,40 +354,7 @@ export default function CertificatePage() {
                         </Card>
                     </motion.div>
 
-                    {/* Stored Records */}
-                    {records.length > 0 && (
-                        <motion.div variants={item}>
-                            <Card className="bg-card border-border mb-5">
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-sm font-display uppercase tracking-wider flex items-center gap-2">
-                                        <FileCheck className="w-4 h-4 text-primary" /> Stored Certificates
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    {records.map((record, index) => (
-                                        <div key={index} className="p-3 bg-secondary border border-border space-y-2">
-                                            <div className="flex justify-between items-start flex-wrap gap-2">
-                                                <div>
-                                                    <strong className="text-xs font-display uppercase tracking-wider text-foreground">{record.fileName}</strong>
-                                                    <p className="text-[10px] font-mono text-muted-foreground">
-                                                        {new Date(record.timestamp).toLocaleString()}
-                                                    </p>
-                                                </div>
-                                                <Button variant="outline" size="sm" className="text-xs font-display uppercase tracking-wider border-primary/40 text-primary" asChild>
-                                                    <a href={getExplorerUrl(record.txId)} target="_blank" rel="noopener noreferrer">
-                                                        Explorer <ExternalLink className="w-3 h-3 ml-1" />
-                                                    </a>
-                                                </Button>
-                                            </div>
-                                            <p className="font-mono text-[9px] text-muted-foreground break-all">
-                                                Hash: {record.hash.slice(0, 20)}...{record.hash.slice(-20)}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    )}
+
 
                     {/* Info */}
                     <motion.div variants={item}>
