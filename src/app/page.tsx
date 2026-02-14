@@ -88,7 +88,7 @@ export default function HomePage() {
             </div>
 
             {/* Right Content - 3D Scene */}
-            <div className="flex-1 w-full h-[400px] md:h-[600px] relative group/3d z-10">
+            <div className="w-full md:flex-1 h-[400px] md:h-[600px] relative group/3d z-10">
               <div className="absolute top-4 right-4 z-30">
                 <Button
                   variant="outline"
