@@ -16,6 +16,7 @@ import {
     hashFile,
     fetchCertificateTransactions,
 } from '@/lib/algorand';
+import { notifyN8N } from '@/lib/n8n';
 
 interface CertificateRecord {
     fileName: string;
@@ -106,6 +107,20 @@ export default function CertificatePage() {
             setRecords(prev => [newRecord, ...prev]);
             setSuccessTxId(txId);
             setStatus('');
+
+            // Notify n8n
+            notifyN8N({
+                event: 'CERTIFICATE_STORED',
+                details: {
+                    wallet: address,
+                    actionSummary: `Stored certificate hash for ${selectedFile.name}`,
+                    txId: txId,
+                    metadata: {
+                        fileName: selectedFile.name,
+                        hash: fileHash
+                    }
+                }
+            });
             setSelectedFile(null);
             setFileHash(null);
             if (fileInputRef.current) fileInputRef.current.value = '';

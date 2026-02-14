@@ -17,6 +17,7 @@ import {
     fetchAttendanceForSession,
     AttendanceRecord
 } from '@/lib/algorand';
+import { notifyN8N } from '@/lib/n8n';
 
 export default function AttendancePage() {
     const { address, isConnected, connect, peraWallet } = useWallet();
@@ -167,6 +168,22 @@ export default function AttendancePage() {
 
             // Refresh live list to show self immediately
             await refreshLiveList(sessionId);
+
+            // Notify n8n
+            notifyN8N({
+                event: 'ATTENDANCE_MARKED',
+                details: {
+                    wallet: address,
+                    studentName: studentName,
+                    actionSummary: `Marked attendance for session ${sessionId}`,
+                    txId: txId,
+                    metadata: {
+                        lat: location.lat,
+                        long: location.long,
+                        distance: 0 // Ideally calculated
+                    }
+                }
+            });
 
         } catch (err: any) {
             console.error('Attendance error:', err);

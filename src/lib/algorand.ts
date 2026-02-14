@@ -13,6 +13,33 @@ const ALGOD_PORT = process.env.NEXT_PUBLIC_ALGOD_PORT || '443';
 const ALGOD_TOKEN = process.env.NEXT_PUBLIC_ALGOD_TOKEN || '';
 const ATTENDANCE_LOOKBACK_ROUNDS = 300000;
 
+// Helper to decode base64 to string safely in browser/node
+function safeDecodeBase64(str: string): string {
+    if (typeof Buffer !== 'undefined') {
+        return Buffer.from(str, 'base64').toString('utf-8');
+    }
+    if (typeof atob !== 'undefined') {
+        return atob(str);
+    }
+    return '';
+}
+
+// Helper to decode base64 to Uint8Array safely
+function safeBase64ToUint8Array(str: string): Uint8Array {
+    if (typeof Buffer !== 'undefined') {
+        return new Uint8Array(Buffer.from(str, 'base64'));
+    }
+    if (typeof atob !== 'undefined') {
+        const binary = atob(str);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+    }
+    return new Uint8Array(0);
+}
+
 // Voting App ID (set after deployment)
 export const VOTING_APP_ID = Number(process.env.NEXT_PUBLIC_VOTING_APP_ID) || 0;
 
@@ -201,8 +228,7 @@ export async function fetchAttendanceSessionsSummary(): Promise<AttendanceSessio
         for (const txn of response.transactions) {
             try {
                 if (!txn.note) continue;
-                const noteBuffer = Buffer.from(txn.note, 'base64');
-                const noteString = noteBuffer.toString('utf-8');
+                const noteString = safeDecodeBase64(txn.note);
                 const noteData = JSON.parse(noteString);
 
                 if (noteData.type !== 'ATTENDANCE' || !noteData.sessionId) continue;
@@ -277,7 +303,7 @@ export async function getVotingState(appId: number): Promise<{
     let creator = '';
 
     for (const state of globalState) {
-        const key = Buffer.from(state.key, 'base64').toString();
+        const key = safeDecodeBase64(state.key);
         const value = state.value;
 
         switch (key) {
@@ -291,7 +317,7 @@ export async function getVotingState(appId: number): Promise<{
                 option1 = value.uint || 0;
                 break;
             case 'creator':
-                creator = algosdk.encodeAddress(Buffer.from(value.bytes, 'base64'));
+                creator = algosdk.encodeAddress(safeBase64ToUint8Array(value.bytes));
                 break;
         }
     }
@@ -312,7 +338,7 @@ export async function hasUserVoted(appId: number, address: string): Promise<bool
         const localState = accountInfo['app-local-state']?.['key-value'] || [];
 
         for (const state of localState) {
-            const key = Buffer.from(state.key, 'base64').toString();
+            const key = safeDecodeBase64(state.key);
             if (key === 'has_voted' && state.value.uint === 1) {
                 return true;
             }
@@ -362,7 +388,7 @@ export async function getVotingParticipationStatus(
     let voted = false;
 
     for (const state of keyValues) {
-        const key = Buffer.from(state.key, 'base64').toString();
+        const key = safeDecodeBase64(state.key);
         if (key === 'has_voted' && state.value?.uint === 1) {
             voted = true;
             break;

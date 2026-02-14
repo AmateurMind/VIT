@@ -19,6 +19,7 @@ import {
     getVotingParticipationStatus,
     VOTING_APP_ID,
 } from '@/lib/algorand';
+import { notifyN8N } from '@/lib/n8n';
 
 interface VotingState {
     isOpen: boolean;
@@ -168,6 +169,16 @@ export default function VotePage() {
             setUserVoted(true);
             setStatus('Vote recorded on blockchain!');
             await fetchState();
+
+            // Notify n8n
+            notifyN8N({
+                event: 'VOTE_CAST',
+                details: {
+                    wallet: address,
+                    actionSummary: `Voted for Option ${choice === 0 ? 'A' : 'B'}`,
+                    txId: result.txId
+                }
+            });
         } catch (err: any) {
             console.error('Voting error:', err);
             if (err?.data?.type === 'CONNECT_MODAL_CLOSED' || err?.message?.includes('4100')) {
@@ -362,7 +373,7 @@ export default function VotePage() {
                     {votingState && (
                         <>
                             {/* Status */}
-                            <motion.div variants={item}>
+                            <motion.div variants={item} initial="hidden" animate="show">
                                 <Card className="bg-card border-2 border-border mb-5">
                                     <CardContent className="pt-6">
                                         <div className="flex justify-between items-center flex-wrap gap-3 mb-3">
@@ -383,7 +394,7 @@ export default function VotePage() {
                             </motion.div>
 
                             {/* Results */}
-                            <motion.div variants={item}>
+                            <motion.div variants={item} initial="hidden" animate="show">
                                 <Card className="bg-card border-2 border-border mb-5">
                                     <CardHeader className="pb-3">
                                         <CardTitle className="text-base font-display uppercase tracking-wider text-foreground flex items-center gap-2">
@@ -415,7 +426,7 @@ export default function VotePage() {
 
                             {/* Voting Actions */}
                             {!votingState.isOpen && (
-                                <motion.div variants={item}>
+                                <motion.div variants={item} initial="hidden" animate="show">
                                     <Card className="bg-card border-2 border-border mb-5">
                                         <CardContent className="pt-6 text-center">
                                             <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
@@ -426,7 +437,7 @@ export default function VotePage() {
                                 </motion.div>
                             )}
                             {votingState.isOpen && !isConnected && (
-                                <motion.div variants={item}>
+                                <motion.div variants={item} initial="hidden" animate="show">
                                     <Card className="bg-card border-2 border-border mb-5">
                                         <CardContent className="pt-6 text-center">
                                             <Wallet className="w-8 h-8 text-primary mx-auto mb-3" />
@@ -448,7 +459,7 @@ export default function VotePage() {
                                 </motion.div>
                             )}
                             {isConnected && votingState.isOpen && (
-                                <motion.div variants={item}>
+                                <motion.div variants={item} initial="hidden" animate="show">
                                     <Card className="bg-card border-2 border-border mb-5">
                                         <CardContent className="pt-6">
                                             {userVoted ? (
