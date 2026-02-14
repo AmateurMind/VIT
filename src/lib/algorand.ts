@@ -65,6 +65,36 @@ function safeBase64ToUint8Array(str: string | Uint8Array): Uint8Array {
     return new Uint8Array(0);
 }
 
+export function normalizeSignedTxnBytes(signedTxn: unknown): Uint8Array {
+    if (signedTxn instanceof Uint8Array) {
+        return signedTxn;
+    }
+
+    if (signedTxn instanceof ArrayBuffer) {
+        return new Uint8Array(signedTxn);
+    }
+
+    if (Array.isArray(signedTxn) && signedTxn.every((item) => typeof item === 'number')) {
+        return Uint8Array.from(signedTxn as number[]);
+    }
+
+    if (typeof signedTxn === 'string') {
+        return safeBase64ToUint8Array(signedTxn);
+    }
+
+    if (signedTxn && typeof signedTxn === 'object') {
+        const candidate = signedTxn as { blob?: unknown; signedTxn?: unknown };
+        if (candidate.blob !== undefined) {
+            return normalizeSignedTxnBytes(candidate.blob);
+        }
+        if (candidate.signedTxn !== undefined) {
+            return normalizeSignedTxnBytes(candidate.signedTxn);
+        }
+    }
+
+    throw new Error('Unsupported signed transaction format from wallet');
+}
+
 // Voting App ID (set after deployment)
 export const VOTING_APP_ID = Number(process.env.NEXT_PUBLIC_VOTING_APP_ID) || 0;
 

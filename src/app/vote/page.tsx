@@ -18,6 +18,7 @@ import {
     getAppExplorerUrl,
     getVotingParticipationStatus,
     VOTING_APP_ID,
+    normalizeSignedTxnBytes,
 } from '@/lib/algorand';
 import { notifyN8N } from '@/lib/n8n';
 
@@ -112,17 +113,17 @@ export default function VotePage() {
             const params = await getSuggestedParams();
             const txn = createOptInTxn(address, appId, params);
             setStatus(isGuestMode ? 'Signing locally...' : 'Sign in Pera Wallet...');
-            let signedTxns: Uint8Array[];
+            let signedTxns: unknown[];
             if (isGuestMode && guestSecretKey) {
                 signedTxns = [txn.signTxn(guestSecretKey)];
             } else if (peraWallet) {
-                signedTxns = await peraWallet.signTransaction([[{ txn }]]);
+                signedTxns = (await peraWallet.signTransaction([[{ txn }]])) as unknown[];
             } else {
                 throw new Error('No wallet connected');
             }
             setStatus('Sending to Algorand...');
             const client = getAlgodClient();
-            const result = await client.sendRawTransaction(signedTxns[0]).do();
+            const result = await client.sendRawTransaction(normalizeSignedTxnBytes(signedTxns[0])).do();
             setStatus('Confirming...');
             await new Promise(resolve => setTimeout(resolve, 4000));
             setTxId(result.txid);
@@ -152,17 +153,17 @@ export default function VotePage() {
             const params = await getSuggestedParams();
             const txn = createVoteTxn(address, appId, choice, params);
             setStatus(isGuestMode ? 'Signing locally...' : 'Sign in Pera Wallet...');
-            let signedTxns: Uint8Array[];
+            let signedTxns: unknown[];
             if (isGuestMode && guestSecretKey) {
                 signedTxns = [txn.signTxn(guestSecretKey)];
             } else if (peraWallet) {
-                signedTxns = await peraWallet.signTransaction([[{ txn }]]);
+                signedTxns = (await peraWallet.signTransaction([[{ txn }]])) as unknown[];
             } else {
                 throw new Error('No wallet connected');
             }
             setStatus('Broadcasting to blockchain...');
             const client = getAlgodClient();
-            const result = await client.sendRawTransaction(signedTxns[0]).do();
+            const result = await client.sendRawTransaction(normalizeSignedTxnBytes(signedTxns[0])).do();
             setStatus('Confirming on-chain...');
             await new Promise(resolve => setTimeout(resolve, 4000));
             setTxId(result.txid);

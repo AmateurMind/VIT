@@ -15,7 +15,8 @@ import {
     getAlgodClient,
     getExplorerUrl,
     fetchAttendanceForSession,
-    AttendanceRecord
+    AttendanceRecord,
+    normalizeSignedTxnBytes
 } from '@/lib/algorand';
 import { notifyN8N } from '@/lib/n8n';
 
@@ -145,7 +146,7 @@ export default function AttendancePage() {
 
             setStatus('Recording on Algorand...');
             const client = getAlgodClient();
-            const result = await client.sendRawTransaction(signedTxns[0]).do();
+            const result = await client.sendRawTransaction(normalizeSignedTxnBytes(signedTxns[0])).do();
             const txId = txn.txID() || result.txid || '';
 
             setStatus('Confirming on-chain...');
