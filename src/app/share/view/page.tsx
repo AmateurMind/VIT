@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, Clock, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
+import { Loader2, AlertTriangle, Clock, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -36,6 +36,71 @@ function SharedViewContent() {
     const [numPages, setNumPages] = useState<number | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [scale, setScale] = useState(1.0);
+    const [isBlurred, setIsBlurred] = useState(false);
+    const [screenshotAttempt, setScreenshotAttempt] = useState(false);
+
+    // Block keyboard shortcuts for screenshots
+    const handleKeyDown = useCallback((e: KeyboardEvent) => {
+        // PrintScreen
+        if (e.key === 'PrintScreen') {
+            e.preventDefault();
+            setScreenshotAttempt(true);
+            setTimeout(() => setScreenshotAttempt(false), 2000);
+            // Overwrite clipboard with empty content
+            navigator.clipboard?.writeText('Screenshots are disabled for this content.').catch(() => {});
+            return;
+        }
+        // Ctrl+P (print), Ctrl+S (save), Ctrl+Shift+I (devtools), Ctrl+Shift+S (screenshot in some browsers)
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            setScreenshotAttempt(true);
+            setTimeout(() => setScreenshotAttempt(false), 2000);
+            return;
+        }
+        if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'S' || e.key === 's')) {
+            e.preventDefault();
+            return;
+        }
+        // F12 (devtools)
+        if (e.key === 'F12') {
+            e.preventDefault();
+            return;
+        }
+        // Meta+Shift+3/4/5 (Mac screenshots)
+        if (e.metaKey && e.shiftKey && ['3', '4', '5'].includes(e.key)) {
+            e.preventDefault();
+            setScreenshotAttempt(true);
+            setTimeout(() => setScreenshotAttempt(false), 2000);
+            return;
+        }
+    }, []);
+
+    // Blur content when page loses focus (catches many screenshot tools)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                setIsBlurred(true);
+            } else {
+                // Small delay before unblurring to catch quick screenshot attempts
+                setTimeout(() => setIsBlurred(false), 300);
+            }
+        };
+
+        const handleBlur = () => setIsBlurred(true);
+        const handleFocus = () => setTimeout(() => setIsBlurred(false), 300);
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleBlur);
+        window.addEventListener('focus', handleFocus);
+        document.addEventListener('keydown', handleKeyDown, { capture: true });
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('blur', handleBlur);
+            window.removeEventListener('focus', handleFocus);
+            document.removeEventListener('keydown', handleKeyDown, { capture: true });
+        };
+    }, [handleKeyDown]);
 
     useEffect(() => {
         import('react-pdf').then(({ pdfjs }) => {
@@ -185,10 +250,11 @@ function SharedViewContent() {
         <div
             className="min-h-screen bg-black/95 flex flex-col items-center pt-24 pb-16 px-4 select-none"
             onContextMenu={(e) => e.preventDefault()}
+            onDragStart={(e) => e.preventDefault()}
         >
             <style jsx global>{`
                 @media print {
-                    body { display: none !important; }
+                    html, body, #__next { display: none !important; visibility: hidden !important; }
                 }
                 .react-pdf__Page__textLayer {
                     display: none !important;
@@ -196,14 +262,91 @@ function SharedViewContent() {
                 .react-pdf__Page__annotationLayer {
                     display: none !important;
                 }
+                /* Prevent image dragging/saving */
+                .protected-content img {
+                    -webkit-user-drag: none;
+                    user-drag: none;
+                    -webkit-touch-callout: none;
+                }
+                /* Blur transition */
+                .content-blur {
+                    filter: blur(30px) brightness(0.3);
+                    transition: filter 0.15s ease;
+                }
+                .content-visible {
+                    filter: none;
+                    transition: filter 0.3s ease;
+                }
+                /* Watermark overlay */
+                .watermark-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    pointer-events: none;
+                    z-index: 30;
+                    background-image: repeating-linear-gradient(
+                        -45deg,
+                        transparent,
+                        transparent 100px,
+                        rgba(255,255,255,0.015) 100px,
+                        rgba(255,255,255,0.015) 101px
+                    );
+                    overflow: hidden;
+                }
+                .watermark-text {
+                    position: absolute;
+                    color: rgba(255, 255, 255, 0.04);
+                    font-size: 16px;
+                    font-weight: bold;
+                    white-space: nowrap;
+                    transform: rotate(-35deg);
+                    user-select: none;
+                    pointer-events: none;
+                    letter-spacing: 4px;
+                }
             `}</style>
+
+            {/* Screenshot attempt warning */}
+            {screenshotAttempt && (
+                <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
+                    <div className="text-center">
+                        <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                        <p className="text-red-400 text-lg font-bold">Screenshots are disabled</p>
+                        <p className="text-white/50 text-sm mt-2">This content is protected</p>
+                        <Button
+                            className="mt-6 bg-black text-white border border-white hover:bg-black/80"
+                            onClick={() => setScreenshotAttempt(false)}
+                        >
+                            Go Back
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Watermark overlay */}
+            <div className="watermark-overlay">
+                {Array.from({ length: 20 }).map((_, i) => (
+                    <span
+                        key={i}
+                        className="watermark-text"
+                        style={{
+                            top: `${(i * 150) % 1000}px`,
+                            left: `${(i * 200) % 1400 - 200}px`,
+                        }}
+                    >
+                        PROTECTED CONTENT — VIEW ONLY
+                    </span>
+                ))}
+            </div>
 
             <div className="fixed top-20 right-4 bg-background/10 backdrop-blur text-white px-3 py-1 rounded-full text-xs border border-white/10 flex items-center gap-2 z-50">
                 <Clock className="w-3 h-3" /> Expires in: {timeLeft}
             </div>
 
             {imageUrl && (
-                <div className="w-full flex flex-col items-center justify-center relative">
+                <div className={`w-full flex flex-col items-center justify-center relative protected-content ${isBlurred ? 'content-blur' : 'content-visible'}`}>
                     {isPdf ? (
                         <div className="relative flex flex-col items-center max-h-[calc(100vh-10rem)] overflow-auto w-full">
                             <div className="mb-4 flex items-center gap-4 bg-background/20 backdrop-blur p-2 rounded-lg border border-white/10 sticky top-0 z-40">
@@ -277,6 +420,8 @@ function SharedViewContent() {
                             src={imageUrl}
                             alt="Shared Content"
                             className="max-w-full w-auto h-auto object-contain pointer-events-none"
+                            draggable={false}
+                            onDragStart={(e) => e.preventDefault()}
                         />
                     )}
                 </div>
