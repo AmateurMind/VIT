@@ -94,7 +94,8 @@ export default function Navbar() {
                 <button
                     onClick={handleLogout}
                     className={cn(
-                        "logout-btn flex items-center gap-2 h-9 px-5 rounded-sm border-2 border-primary bg-primary text-primary-foreground font-display text-xs uppercase tracking-wider font-bold hover:bg-primary/90",
+                        "logout-btn items-center gap-2 h-9 px-5 rounded-sm border-2 border-primary bg-primary text-primary-foreground font-display text-xs uppercase tracking-wider font-bold hover:bg-primary/90",
+                        isConnected ? "flex" : "hidden md:flex",
                         isLoggingOut && "logging-out"
                     )}
                     title={isConnected ? "Disconnect Wallet & Logout" : "No wallet connected"}
