@@ -67,7 +67,7 @@ export default function Navbar() {
 
             {/* Actions: Theme Toggle + Connect/Address + Logout */}
             <div className="flex items-center gap-4">
-                <ThemeToggle fixedPosition={false} className="hidden sm:flex" />
+                <ThemeToggle fixedPosition={false} className="flex border-none shadow-none bg-transparent hover:bg-transparent px-2" />
 
                 {isConnected ? (
                     /* Connected: Show wallet address */
