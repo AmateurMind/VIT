@@ -243,9 +243,38 @@ export default function SharePage() {
                                         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                     </Button>
                                 </div>
-                                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
                                     <Clock className="w-3 h-3" /> Expires in {isCustom ? `${customMinutes}m ${customSeconds}s` : DURATIONS.find(d => d.value === duration)?.label}
                                 </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <Button
+                                    className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white"
+                                    onClick={() => {
+                                        const text = encodeURIComponent(`Check out this file I shared securely via CampusTrust:\n${generatedLink}`);
+                                        window.open(`https://wa.me/?text=${text}`, '_blank');
+                                    }}
+                                >
+                                    Share on WhatsApp
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={() => {
+                                        if (navigator.share) {
+                                            navigator.share({
+                                                title: 'Secure File Share',
+                                                text: 'Check out this file I shared securely via CampusTrust',
+                                                url: generatedLink
+                                            }).catch(console.error);
+                                        } else {
+                                            copyToClipboard();
+                                        }
+                                    }}
+                                >
+                                    Share...
+                                </Button>
                             </div>
 
                             <Button variant="outline" onClick={() => {
@@ -262,6 +291,6 @@ export default function SharePage() {
                     )}
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }
