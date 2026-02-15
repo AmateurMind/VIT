@@ -20,6 +20,7 @@ import {
     fetchCertificateTransactions,
     getExplorerUrl,
 } from '@/lib/algorand';
+import { ShareCertificateModal } from '@/components/ShareCertificateModal';
 
 interface CertificateRecord {
     fileName: string;
@@ -32,6 +33,13 @@ export default function CertificateRecordsPage() {
     const { address, isConnected, connect } = useWallet();
     const [records, setRecords] = useState<CertificateRecord[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [selectedRecord, setSelectedRecord] = useState<CertificateRecord | null>(null);
+
+    const handleShare = (record: CertificateRecord) => {
+        setSelectedRecord(record);
+        setIsShareModalOpen(true);
+    };
 
     useEffect(() => {
         let mounted = true;
@@ -150,11 +158,21 @@ export default function CertificateRecordsPage() {
                                                             </div>
                                                         </TableCell>
                                                         <TableCell className="text-right">
-                                                            <Button variant="ghost" size="sm" className="h-8 text-xs font-display uppercase tracking-wider text-primary hover:text-primary hover:bg-primary/10" asChild>
-                                                                <a href={getExplorerUrl(record.txId)} target="_blank" rel="noopener noreferrer">
-                                                                    Explorer <ExternalLink className="w-3 h-3 ml-1" />
-                                                                </a>
-                                                            </Button>
+                                                            <div className="flex justify-end gap-2">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-8 text-xs font-display uppercase tracking-wider text-primary hover:text-primary hover:bg-primary/10"
+                                                                    onClick={() => handleShare(record)}
+                                                                >
+                                                                    Share <ExternalLink className="w-3 h-3 ml-1" />
+                                                                </Button>
+                                                                <Button variant="ghost" size="sm" className="h-8 text-xs font-display uppercase tracking-wider text-muted-foreground hover:text-foreground" asChild>
+                                                                    <a href={getExplorerUrl(record.txId)} target="_blank" rel="noopener noreferrer">
+                                                                        Explorer
+                                                                    </a>
+                                                                </Button>
+                                                            </div>
                                                         </TableCell>
                                                     </TableRow>
                                                 ))}
@@ -167,6 +185,12 @@ export default function CertificateRecordsPage() {
                     )}
                 </motion.div>
             </main>
+
+            <ShareCertificateModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                record={selectedRecord}
+            />
         </div>
     );
 }

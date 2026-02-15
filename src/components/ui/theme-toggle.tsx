@@ -19,16 +19,20 @@ interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ className, fixedPosition = true }: ThemeToggleProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === 'undefined') {
-      return 'light';
-    }
-    return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
-  });
+  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme>('light');
 
   useEffect(() => {
+    const persistedTheme = localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+    setTheme(persistedTheme);
+    applyTheme(persistedTheme);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     applyTheme(theme);
-  }, [theme]);
+  }, [mounted, theme]);
 
   const handleToggle = () => {
     const nextTheme: Theme = theme === 'light' ? 'dark' : 'light';
@@ -37,6 +41,10 @@ export function ThemeToggle({ className, fixedPosition = true }: ThemeToggleProp
   };
 
   const isDark = theme === 'dark';
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <Button

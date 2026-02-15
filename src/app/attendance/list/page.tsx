@@ -10,6 +10,7 @@ import {
   type AttendanceRecord,
   type AttendanceSessionSummary
 } from '@/lib/algorand';
+import { getDistanceFromLatLonInKm } from '@/lib/utils';
 
 function AttendanceListContent() {
   const searchParams = useSearchParams();
@@ -147,7 +148,30 @@ function AttendanceListContent() {
                 <td className="p-2">{row.studentName ?? 'Unknown'}</td>
                 <td className="p-2 font-mono">{row.sender}</td>
                 <td className="p-2">{new Date(row.timestamp).toLocaleString()}</td>
-                <td className="p-2">{row.locationVerified ? 'Yes' : 'No'}</td>
+                <td className="p-2">
+                  {(() => {
+                    if (!row.locationVerified) return <span className="text-muted-foreground">No</span>;
+
+                    // Check if Parseable Session Location exists
+                    // Format: CLASS-DATE-RAND_LAT_LONG
+                    // We can also check if `sessionId` in state has the coords
+                    const parts = sessionId.split('_');
+                    if (parts.length >= 3 && row.location) {
+                      const sLat = parseFloat(parts[1]);
+                      const sLong = parseFloat(parts[2]);
+                      if (!isNaN(sLat) && !isNaN(sLong)) {
+                        const dist = getDistanceFromLatLonInKm(sLat, sLong, row.location.lat, row.location.long) * 1000;
+                        if (dist <= 100) {
+                          return <span className="text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded border border-green-200 text-xs">🟢 In Class ({Math.round(dist)}m)</span>;
+                        } else {
+                          return <span className="text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-200 text-xs">🔴 Remote ({(dist / 1000).toFixed(1)}km)</span>;
+                        }
+                      }
+                    }
+
+                    return <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-xs">📍 Geo-Tagged</span>;
+                  })()}
+                </td>
                 <td className="p-2">
                   <a href={getExplorerUrl(row.txId)} target="_blank" rel="noreferrer" className="underline">
                     {row.txId}

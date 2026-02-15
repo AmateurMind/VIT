@@ -18,7 +18,7 @@ import {
     AttendanceRecord,
     normalizeSignedTxnBytes
 } from '@/lib/algorand';
-import { notifyAttendanceMarked } from '@/lib/n8n';
+import { getDistanceFromLatLonInKm } from '@/lib/utils';
 
 export default function AttendancePage() {
     const { address, isConnected, connect, peraWallet } = useWallet();
@@ -63,6 +63,8 @@ export default function AttendancePage() {
     // Auto-refresh live list
     useEffect(() => {
         if (sessionId && sessionId.length > 10) {
+            // Support legacy and new session IDs with coordinates
+            // New format: CLASS-DATE-RAND_LAT_LONG
             refreshLiveList(sessionId);
             const interval = setInterval(() => refreshLiveList(sessionId), 10000);
             return () => clearInterval(interval);
@@ -73,21 +75,25 @@ export default function AttendancePage() {
         const date = new Date().toISOString().split('T')[0];
         const random = Math.random().toString(36).substring(2, 6).toUpperCase();
         const baseId = `CLASS-${date}-${random}`;
+
+        // Default to base ID first
         setSessionId(baseId);
 
-        // Mock: Teacher sets location when generating ID
+        // Teacher sets location when generating ID
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((pos) => {
+                const lat = pos.coords.latitude.toFixed(6);
+                const long = pos.coords.longitude.toFixed(6);
+
+                // Append coordinates to Session ID: ID_LAT_LONG
+                const enrichedSessionId = `${baseId}_${lat}_${long}`;
+                setSessionId(enrichedSessionId);
+
                 setSessionLocation({
                     lat: pos.coords.latitude,
                     long: pos.coords.longitude,
                     name: 'Classroom A'
                 });
-                // In a real app, this location would be stored on-chain or in a DB associated with the Session ID
-                // For this hackathon demo, we'll simulate by appending coordinates to sessionId if we wanted, 
-                // but simpler to just keep it in local state for the "Teacher View" demo on one device.
-                // To make it work across devices without a DB, we'd need to put the coords in the URL or QR code.
-                // For now, we will assume the User acts as both for demo purposes or we just show the logic.
             });
         }
     };
@@ -170,14 +176,8 @@ export default function AttendancePage() {
             // Refresh live list to show self immediately
             await refreshLiveList(sessionId);
 
-            // Notify n8n
-            // Notify n8n
-            notifyAttendanceMarked({
-                studentName: studentName,
-                sessionId: sessionId,
-                locationVerified: !!(location.lat && location.long),
-                explorerUrl: getExplorerUrl(txId)
-            });
+            // Refresh live list to show self immediately
+            await refreshLiveList(sessionId);
 
         } catch (err: any) {
             console.error('Attendance error:', err);
@@ -186,25 +186,6 @@ export default function AttendancePage() {
             setLoading(false);
         }
     };
-
-    // Helper to calculate distance
-    function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-        var R = 6371; // Radius of the earth in km
-        var dLat = deg2rad(lat2 - lat1);  // deg2rad below
-        var dLon = deg2rad(lon2 - lon1);
-        var a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2)
-            ;
-        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        var d = R * c; // Distance in km
-        return d;
-    }
-
-    function deg2rad(deg: number) {
-        return deg * (Math.PI / 180)
-    }
 
     const container = {
         hidden: { opacity: 0 },
