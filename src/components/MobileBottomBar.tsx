@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, Vote, CalendarCheck, FileBadge } from 'lucide-react';
+import { Home, Vote, CalendarCheck, FileBadge, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function MobileBottomBar() {
@@ -14,6 +14,7 @@ export default function MobileBottomBar() {
         { href: '/vote', label: 'Vote', icon: Vote },
         { href: '/attendance', label: 'Attend', icon: CalendarCheck },
         { href: '/certificate', label: 'Certs', icon: FileBadge },
+        { href: '/share', label: 'Share', icon: Share2 },
     ];
 
     return (
