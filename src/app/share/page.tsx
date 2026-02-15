@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Upload, Link as LinkIcon, Copy, Check, Clock, ShieldAlert, FileText, Image as ImageIcon } from 'lucide-react';
+import { Upload, Copy, Check, Clock, ShieldAlert, FileText, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -34,8 +32,8 @@ export default function SharePage() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = e.target.files?.[0];
         if (selected) {
-            if (selected.size > 2 * 1024 * 1024) { // 2MB Limit
-                setError("File is too large. Please upload files smaller than 2MB for link generation.");
+            if (selected.size > 5 * 1024 * 1024) {
+                setError("File is too large. Please upload files smaller than 5MB.");
                 setFile(null);
                 setPreview(null);
                 return;
@@ -43,7 +41,6 @@ export default function SharePage() {
             setFile(selected);
             setError('');
 
-            // Generate preview
             const reader = new FileReader();
             reader.onload = (e) => {
                 setPreview(e.target?.result as string);
@@ -52,9 +49,10 @@ export default function SharePage() {
         }
     };
 
-    const generateLink = () => {
+    const generateLink = async () => {
         if (!file || !preview) return;
         setLoading(true);
+        setError('');
 
         try {
             let selectedDuration = duration;
@@ -69,19 +67,29 @@ export default function SharePage() {
                 }
             }
 
-            // Format: expirationTimestamp|dataUrl
-            const expires = Date.now() + selectedDuration;
-            const payload = `${expires}|${preview}`;
+            // Upload to Cloudinary
+            const res = await fetch('/api/share', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dataUrl: preview }),
+            });
 
-            // Basic compression/encoding not needed as preview IS base64 data url
-            // We construct the full URL with a hash fragment
-            const link = `${window.location.origin}/share/view#${payload}`;
+            if (!res.ok) {
+                throw new Error('Upload failed');
+            }
+
+            const { url } = await res.json();
+
+            // Build short link: expires|cloudinaryUrl
+            const expires = Date.now() + selectedDuration;
+            const payload = btoa(JSON.stringify({ url, expires }));
+            const link = `${window.location.origin}/share/view?d=${payload}`;
 
             setGeneratedLink(link);
-            setLoading(false);
         } catch (err) {
             console.error(err);
-            setError("Failed to generate link. File might be too complex.");
+            setError("Failed to upload file. Please try again.");
+        } finally {
             setLoading(false);
         }
     };
@@ -103,7 +111,7 @@ export default function SharePage() {
                     <CardDescription>
                         Share certificates, images, or documents via a temporary, secure link.
                         <br />
-                        <span className="text-xs text-muted-foreground">(Max 2MB. Files are not stored on any server.)</span>
+                        <span className="text-xs text-muted-foreground">(Max 5MB. Uploaded securely to cloud storage.)</span>
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -209,7 +217,7 @@ export default function SharePage() {
                                 disabled={!file || loading}
                                 className="w-full font-display uppercase tracking-wider"
                             >
-                                {loading ? 'Generating...' : 'Generate Secure Link'}
+                                {loading ? 'Uploading & Generating...' : 'Generate Secure Link'}
                             </Button>
                         </div>
                     ) : (
@@ -220,8 +228,8 @@ export default function SharePage() {
                                 </div>
                                 <h3 className="font-bold text-lg">Link Ready!</h3>
                                 <p className="text-sm text-muted-foreground">
-                                    This link contains your file data safely encrypted.
-                                    It will expire automatically.
+                                    Your file has been uploaded securely.
+                                    The link will expire automatically.
                                 </p>
                             </div>
 

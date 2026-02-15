@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, Clock, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -13,11 +14,25 @@ const Document = dynamic(() => import('react-pdf').then((mod) => mod.Document), 
 const Page = dynamic(() => import('react-pdf').then((mod) => mod.Page), { ssr: false });
 
 export default function SharedViewPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        }>
+            <SharedViewContent />
+        </Suspense>
+    );
+}
+
+function SharedViewContent() {
+    const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [dataUrl, setDataUrl] = useState<string | null>(null);
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [expired, setExpired] = useState(false);
     const [timeLeft, setTimeLeft] = useState('');
+    const [isPdf, setIsPdf] = useState(false);
     const [numPages, setNumPages] = useState<number | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [scale, setScale] = useState(1.0);
@@ -27,66 +42,102 @@ export default function SharedViewPage() {
             pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
         });
 
-        // Parse Hash
-        const hash = window.location.hash.substring(1); // Remove #
-        if (!hash) {
+        // Read from query param
+        const data = searchParams.get('d');
+
+        // Also support legacy hash-based links
+        const hash = window.location.hash.substring(1);
+
+        if (data) {
+            // New format: base64 encoded JSON { url, expires }
+            try {
+                const decoded = JSON.parse(atob(data));
+                const { url, expires } = decoded;
+
+                if (Date.now() > expires) {
+                    setExpired(true);
+                    setLoading(false);
+                    return;
+                }
+
+                setImageUrl(url);
+                setIsPdf(url.endsWith('.pdf') || url.includes('/raw/'));
+                setLoading(false);
+
+                // Timer
+                const updateTimer = () => {
+                    const remaining = expires - Date.now();
+                    if (remaining <= 0) {
+                        setExpired(true);
+                    } else {
+                        const minutes = Math.floor(remaining / 60000);
+                        const seconds = Math.floor((remaining % 60000) / 1000);
+                        setTimeLeft(`${minutes}m ${seconds}s`);
+                    }
+                };
+
+                updateTimer();
+                const interval = setInterval(updateTimer, 1000);
+                return () => clearInterval(interval);
+            } catch (e) {
+                console.error(e);
+                setError("Invalid or corrupted link.");
+                setLoading(false);
+            }
+        } else if (hash) {
+            // Legacy format: timestamp|dataUrl
+            try {
+                const separatorIndex = hash.indexOf('|');
+                if (separatorIndex === -1) {
+                    setError("Invalid link format.");
+                    setLoading(false);
+                    return;
+                }
+
+                const expiryStr = hash.substring(0, separatorIndex);
+                const content = hash.substring(separatorIndex + 1);
+                const expiry = parseInt(expiryStr, 10);
+
+                if (isNaN(expiry)) {
+                    setError("Invalid expiration date.");
+                    setLoading(false);
+                    return;
+                }
+
+                if (Date.now() > expiry) {
+                    setExpired(true);
+                    setLoading(false);
+                    return;
+                }
+
+                setImageUrl(content);
+                setIsPdf(content.startsWith('data:application/pdf'));
+                setLoading(false);
+
+                const updateTimer = () => {
+                    const remaining = expiry - Date.now();
+                    if (remaining <= 0) {
+                        setExpired(true);
+                    } else {
+                        const minutes = Math.floor(remaining / 60000);
+                        const seconds = Math.floor((remaining % 60000) / 1000);
+                        setTimeLeft(`${minutes}m ${seconds}s`);
+                    }
+                };
+
+                updateTimer();
+                const interval = setInterval(updateTimer, 1000);
+                return () => clearInterval(interval);
+            } catch (e) {
+                console.error(e);
+                setError("Failed to parse link data.");
+                setLoading(false);
+            }
+        } else {
             setError("No data found in link.");
             setLoading(false);
-            return;
         }
-
-        try {
-            // Format: timestamp|dataUrl
-            const separatorIndex = hash.indexOf('|');
-            if (separatorIndex === -1) {
-                setError("Invalid link format.");
-                setLoading(false);
-                return;
-            }
-
-            const expiryStr = hash.substring(0, separatorIndex);
-            const content = hash.substring(separatorIndex + 1);
-            const expiry = parseInt(expiryStr, 10);
-
-            if (isNaN(expiry)) {
-                setError("Invalid expiration date.");
-                setLoading(false);
-                return;
-            }
-
-            // Check expiry
-            if (Date.now() > expiry) {
-                setExpired(true);
-                setLoading(false);
-                return;
-            }
-
-            // Set Data
-            setDataUrl(content);
-            setLoading(false);
-
-            // Timer
-            const updateTimer = () => {
-                const remaining = expiry - Date.now();
-                if (remaining <= 0) {
-                    setExpired(true);
-                } else {
-                    const minutes = Math.floor(remaining / 60000);
-                    const seconds = Math.floor((remaining % 60000) / 1000);
-                    setTimeLeft(`${minutes}m ${seconds}s`);
-                }
-            };
-
-            updateTimer();
-            const interval = setInterval(updateTimer, 1000);
-            return () => clearInterval(interval);
-
-        } catch (e) {
-            console.error(e);
-            setError("Failed to parse link data.");
-            setLoading(false);
-        }
-    }, []);
+    }, [searchParams]);
 
     function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
         setNumPages(numPages);
@@ -132,14 +183,13 @@ export default function SharedViewPage() {
 
     return (
         <div
-            className="min-h-screen bg-black/95 flex flex-col items-center justify-center p-4 select-none"
+            className="min-h-screen bg-black/95 flex flex-col items-center pt-24 pb-16 px-4 select-none"
             onContextMenu={(e) => e.preventDefault()}
         >
             <style jsx global>{`
                 @media print {
                     body { display: none !important; }
                 }
-                /* Hide PDF text layer to prevent selection */
                 .react-pdf__Page__textLayer {
                     display: none !important;
                 }
@@ -152,10 +202,10 @@ export default function SharedViewPage() {
                 <Clock className="w-3 h-3" /> Expires in: {timeLeft}
             </div>
 
-            {dataUrl && (
-                <div className="w-full h-full flex flex-col items-center justify-center p-4 relative">
-                    {dataUrl.startsWith('data:application/pdf') ? (
-                        <div className="relative flex flex-col items-center max-h-screen overflow-auto w-full">
+            {imageUrl && (
+                <div className="w-full flex flex-col items-center justify-center relative">
+                    {isPdf ? (
+                        <div className="relative flex flex-col items-center max-h-[calc(100vh-10rem)] overflow-auto w-full">
                             <div className="mb-4 flex items-center gap-4 bg-background/20 backdrop-blur p-2 rounded-lg border border-white/10 sticky top-0 z-40">
                                 <Button
                                     variant="ghost"
@@ -199,7 +249,7 @@ export default function SharedViewPage() {
                             </div>
 
                             <Document
-                                file={dataUrl}
+                                file={imageUrl}
                                 onLoadSuccess={onDocumentLoadSuccess}
                                 loading={
                                     <div className="flex items-center gap-2 text-white">
@@ -224,9 +274,9 @@ export default function SharedViewPage() {
                         </div>
                     ) : (
                         <img
-                            src={dataUrl}
+                            src={imageUrl}
                             alt="Shared Content"
-                            className="max-w-full max-h-screen object-contain pointer-events-none"
+                            className="max-w-full w-auto h-auto object-contain pointer-events-none"
                         />
                     )}
                 </div>
