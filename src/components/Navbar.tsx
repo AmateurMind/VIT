@@ -3,14 +3,16 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Wallet } from 'lucide-react';
+import { ShieldCheck, Wallet, LogOut, Zap } from 'lucide-react';
 import { useWallet } from '@/context/WalletContext';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 export default function Navbar() {
     const pathname = usePathname();
     const { address, isConnected, isConnecting, connect, disconnect } = useWallet();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const navLinks = [
         { href: '/vote', label: 'Vote' },
@@ -18,6 +20,22 @@ export default function Navbar() {
         { href: '/certificate', label: 'Certs' },
         { href: '/share', label: 'Share' },
     ];
+
+    const handleLogout = () => {
+        if (isLoggingOut) return;
+
+        if (isConnected) {
+            // Wallet is connected — disconnect it
+            setIsLoggingOut(true);
+            setTimeout(() => {
+                disconnect();
+                setIsLoggingOut(false);
+            }, 600);
+        } else {
+            // No wallet connected — prompt to connect first
+            alert('No wallet connected. Please connect your wallet first.');
+        }
+    };
 
     return (
         <header className="flex justify-between items-center py-4 px-6 md:px-12 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-50">
@@ -47,21 +65,20 @@ export default function Navbar() {
                 ))}
             </nav>
 
-            {/* Actions: Theme Toggle + Connect */}
+            {/* Actions: Theme Toggle + Connect/Address + Logout */}
             <div className="flex items-center gap-4">
                 <ThemeToggle fixedPosition={false} className="hidden sm:flex" />
 
                 {isConnected ? (
+                    /* Connected: Show wallet address */
                     <div className="flex items-center gap-3 border border-primary/30 px-4 py-1.5 bg-background/50">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                         <span className="text-xs font-mono text-primary hidden sm:inline-block">
                             {address?.slice(0, 6)}...{address?.slice(-4)}
                         </span>
-                        <Button onClick={disconnect} variant="destructive" size="sm" className="h-7 px-3 text-xs font-display uppercase tracking-wider">
-                            DC
-                        </Button>
                     </div>
                 ) : (
+                    /* Not connected: Show connect button */
                     <Button
                         onClick={connect}
                         disabled={isConnecting}
@@ -72,6 +89,20 @@ export default function Navbar() {
                         <Wallet className="w-3.5 h-3.5 ml-2" />
                     </Button>
                 )}
+
+                {/* Logout Button — Always visible, matches Connect style */}
+                <button
+                    onClick={handleLogout}
+                    className={cn(
+                        "logout-btn flex items-center gap-2 h-9 px-5 rounded-sm border-2 border-primary bg-primary text-primary-foreground font-display text-xs uppercase tracking-wider font-bold hover:bg-primary/90",
+                        isLoggingOut && "logging-out"
+                    )}
+                    title={isConnected ? "Disconnect Wallet & Logout" : "No wallet connected"}
+                >
+                    <span className="btn-shine" />
+                    <span>{isLoggingOut ? 'Bye!' : 'Logout'}</span>
+                    <LogOut className="w-3.5 h-3.5 ml-1 logout-icon" />
+                </button>
             </div>
         </header>
     );
