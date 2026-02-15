@@ -51,11 +51,12 @@ Campus systems like **voting, attendance, feedback, and certification** suffer f
 - Each record linked to a verifiable transaction ID
 - Auto-generated session IDs with timestamps
 
-### 📜 Module 03 — Certificate Verification
+### 📜 Module 03 — Certificate Verification & Secure Sharing
 - Upload any certificate (PDF/PNG/JPG) → generates **SHA-256 hash**
 - Hash is **permanently stored on Algorand** as cryptographic proof
 - **Verify mode**: Re-upload any certificate to check authenticity instantly
 - If even 1 pixel changes, the hash won't match — tamper-proof
+- **Secure Sharing**: Create temporary, view-only links with customizable expiration (5s to 7 days). Viewers cannot copy or print.
 
 ### 🚀 Demo Guest Mode
 - **No wallet needed** — generates a temporary Algorand keypair in-browser
@@ -146,7 +147,8 @@ STROTAS/
 │   │   ├── layout.tsx                    ← Root layout with WalletProvider
 │   │   ├── vote/page.tsx                 ← ⭐ Voting module (smart contract UI)
 │   │   ├── attendance/page.tsx           ← ⭐ Attendance module (hash storage)
-│   │   └── certificate/page.tsx          ← ⭐ Certificate module (verify + store)
+│   │   ├── certificate/page.tsx          ← ⭐ Certificate module (verify + store)
+│   │   └── certificate/share/[data]/page.tsx ← ⭐ Secure Sharing (view-only link)
 │   │
 │   ├── context/
 │   │   └── WalletContext.tsx             ← ⭐ Pera Wallet + Guest Mode provider
@@ -174,7 +176,8 @@ STROTAS/
 | 🥈 | [`src/context/WalletContext.tsx`](./src/context/WalletContext.tsx) | Pera Wallet integration + Guest Mode for demos |
 | 🥈 | [`src/app/attendance/page.tsx`](./src/app/attendance/page.tsx) | Hash-based attendance proof on Algorand |
 | 🥈 | [`src/app/certificate/page.tsx`](./src/app/certificate/page.tsx) | SHA-256 certificate verification system |
-| 🥉 | [`src/app/page.tsx`](./src/app/page.tsx) | Premium UI with 3D visualization |
+| � | [`src/app/certificate/share/.../page.tsx`](./src/app/certificate/share/[data]/page.tsx) | Secure view-only link sharing system |
+| �🥉 | [`src/app/page.tsx`](./src/app/page.tsx) | Premium UI with 3D visualization |
 | 🥉 | [`contracts/deploy_voting.py`](./contracts/deploy_voting.py) | Automated contract deployment pipeline |
 
 ---
@@ -242,6 +245,7 @@ Step 4: 📋 ATTENDANCE → Generate Session → Mark Present
         → Show hash stored on-chain
         ↓
 Step 5: 📜 CERTIFICATE → Upload PDF → Store hash
+        → Share Link (5s expiry) → Show auto-expiry & anti-copy
         → Switch to Verify mode → Re-upload → ✅ Match!
         → Modify file → Re-upload → ❌ No match! (tamper detected)
         ↓
