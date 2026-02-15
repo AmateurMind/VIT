@@ -521,7 +521,7 @@ export function createHashStoreTxn(
 
     return algosdk.makePaymentTxnWithSuggestedParamsFromObject({
         sender,
-        to: sender, // Self-transfer (0 ALGO)
+        receiver: sender, // Self-transfer (0 ALGO)
         amount: 0,
         note: new TextEncoder().encode(JSON.stringify(noteData)),
         suggestedParams,
