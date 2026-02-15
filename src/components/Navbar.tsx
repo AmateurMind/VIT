@@ -16,6 +16,7 @@ export default function Navbar() {
         { href: '/vote', label: 'Vote' },
         { href: '/attendance', label: 'Attend' },
         { href: '/certificate', label: 'Certs' },
+        { href: '/share', label: 'Share' },
     ];
 
     return (
