@@ -461,10 +461,12 @@ export function createOptInTxn(
     appId: number,
     suggestedParams: algosdk.SuggestedParams
 ): algosdk.Transaction {
-    // efficient handling using the non-object constructor to avoid TS issues with 'from'/'sender'
-    // in v2, it's makeApplicationCallTxnFromObject
+    if (!sender) {
+        throw new Error('createOptInTxn: sender address is missing or invalid');
+    }
+    // algosdk v3 object constructors require `sender` (not `from`)
     return algosdk.makeApplicationCallTxnFromObject({
-        from: sender,
+        sender,
         appIndex: appId,
         onComplete: algosdk.OnApplicationComplete.OptInOC,
         suggestedParams,
@@ -481,13 +483,16 @@ export function createVoteTxn(
     choice: number,
     suggestedParams: algosdk.SuggestedParams
 ): algosdk.Transaction {
+    if (!sender) {
+        throw new Error('createVoteTxn: sender address is missing or invalid');
+    }
     const appArgs = [
         new TextEncoder().encode('vote'),
         algosdk.encodeUint64(choice),
     ];
 
     return algosdk.makeApplicationCallTxnFromObject({
-        from: sender,
+        sender,
         appIndex: appId,
         onComplete: algosdk.OnApplicationComplete.NoOpOC,
         appArgs,
@@ -504,6 +509,10 @@ export function createHashStoreTxn(
     noteObject: Record<string, unknown>,
     suggestedParams: algosdk.SuggestedParams
 ): algosdk.Transaction {
+    console.log('createHashStoreTxn: sender', sender, typeof sender);
+    if (typeof sender !== 'string' || !sender) {
+        throw new Error(`createHashStoreTxn: sender address is missing or invalid. Got: ${JSON.stringify(sender)}`);
+    }
     // Use a simple payment transaction with note for storing hash
     // This is cheaper than app calls for simple proof storage
     // Ensure the note contains the hash and the type
@@ -511,7 +520,7 @@ export function createHashStoreTxn(
     const noteData = { ...noteObject, hash };
 
     return algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-        from: sender,
+        sender,
         to: sender, // Self-transfer (0 ALGO)
         amount: 0,
         note: new TextEncoder().encode(JSON.stringify(noteData)),
